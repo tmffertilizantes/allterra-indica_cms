@@ -78,6 +78,7 @@ interface Consultor {
   resale?: string;
   resaleId?: number;
   regionId?: number;
+  betaTester?: boolean;
   user: User;
   userId?: number;
 }
@@ -224,6 +225,25 @@ export default function Consultores() {
               }}
             />
           )}
+        </div>
+      ),
+    },
+    {
+      Component: ({ post, setPost }: CustomComponent) => (
+        <div className="mb-3">
+          <label className="form-label">Beta Tester</label>
+
+          <Form.Check
+            type="switch"
+            id="beta-tester-switch"
+            checked={!!post.betaTester}
+            onChange={(event) =>
+              setPost({
+                ...post,
+                betaTester: event.target.checked,
+              })
+            }
+          />
         </div>
       ),
     },
@@ -452,6 +472,7 @@ export default function Consultores() {
         {
           resaleId: post.resaleId,
           regionId: post.regionId,
+          betaTester: post.betaTester,
         },
         options
       );
