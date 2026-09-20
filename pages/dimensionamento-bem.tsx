@@ -18,14 +18,6 @@ const MODE_LABELS: Record<string, string> = {
 const formatBRL = (value?: number | null) =>
   (value ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const formatKg = (value?: number | null) =>
-  value == null
-    ? "-"
-    : `${value.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })} kg`;
-
 const formatLitros = (value?: number | null) =>
   value == null ? "-" : `${Math.round(value).toLocaleString("pt-BR")} L`;
 
@@ -287,7 +279,6 @@ const Page: NextPage = () => {
                     <thead>
                       <tr>
                         <th>Item</th>
-                        <th className="text-end">Quant.</th>
                         <th className="text-end">Custo/kg</th>
                         <th className="text-end">Custo total</th>
                       </tr>
@@ -295,9 +286,6 @@ const Page: NextPage = () => {
                     <tbody>
                       <tr>
                         <td>Microgeo Start</td>
-                        <td className="text-end">
-                          {formatKg(currentPost.result.qtdStartKg)}
-                        </td>
                         <td className="text-end">
                           {formatBRL(currentPost.result.custoUnitStartPorKg)}
                         </td>
@@ -308,9 +296,6 @@ const Page: NextPage = () => {
                       <tr>
                         <td>Microgeo Reposição</td>
                         <td className="text-end">
-                          {formatKg(currentPost.result.qtdReposicaoKg)}
-                        </td>
-                        <td className="text-end">
                           {formatBRL(currentPost.result.custoUnitReposicaoPorKg)}
                         </td>
                         <td className="text-end">
@@ -318,7 +303,7 @@ const Page: NextPage = () => {
                         </td>
                       </tr>
                       <tr>
-                        <td colSpan={3} className="text-end">
+                        <td colSpan={2} className="text-end">
                           Subtotal
                         </td>
                         <td className="text-end">
@@ -327,7 +312,7 @@ const Page: NextPage = () => {
                       </tr>
                       {currentPost.result.orcamento.valorDescontoAplicado > 0 && (
                         <tr>
-                          <td colSpan={3} className="text-end">
+                          <td colSpan={2} className="text-end">
                             Desconto
                           </td>
                           <td className="text-end">
@@ -336,7 +321,7 @@ const Page: NextPage = () => {
                         </tr>
                       )}
                       <tr className="table-primary">
-                        <td colSpan={3} className="text-end">
+                        <td colSpan={2} className="text-end">
                           <strong>Total</strong>
                         </td>
                         <td className="text-end">
