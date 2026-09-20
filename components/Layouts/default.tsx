@@ -4,6 +4,7 @@ import router from "next/router";
 import { useGlobal } from "@context/global";
 import { Spinner } from "react-bootstrap";
 import Logo from "@components/Logo";
+import VersionTag from "@components/VersionTag";
 import { logout } from "@context/user";
 
 export interface LayoutProps {
@@ -39,6 +40,7 @@ export default function LayoutDefault({
           <Spinner animation="border" variant="primary" />
         </div>
       )}
+      <VersionTag />
     </div>
   );
 }

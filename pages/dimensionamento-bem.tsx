@@ -279,14 +279,6 @@ const Page: NextPage = () => {
                       <td>Volume estimado</td>
                       <td>{formatLitros(currentPost?.result?.volumeEstimado)}</td>
                     </tr>
-                    <tr>
-                      <td>Microgeo Start</td>
-                      <td>{formatKg(currentPost?.result?.qtdStartKg)}</td>
-                    </tr>
-                    <tr>
-                      <td>Microgeo Reposição</td>
-                      <td>{formatKg(currentPost?.result?.qtdReposicaoKg)}</td>
-                    </tr>
                   </tbody>
                 </Table>
 
@@ -333,14 +325,16 @@ const Page: NextPage = () => {
                           {formatBRL(currentPost.result.orcamento.subtotal)}
                         </td>
                       </tr>
-                      <tr>
-                        <td colSpan={3} className="text-end">
-                          Desconto
-                        </td>
-                        <td className="text-end">
-                          - {formatBRL(currentPost.result.orcamento.valorDescontoAplicado)}
-                        </td>
-                      </tr>
+                      {currentPost.result.orcamento.valorDescontoAplicado > 0 && (
+                        <tr>
+                          <td colSpan={3} className="text-end">
+                            Desconto
+                          </td>
+                          <td className="text-end">
+                            - {formatBRL(currentPost.result.orcamento.valorDescontoAplicado)}
+                          </td>
+                        </tr>
+                      )}
                       <tr className="table-primary">
                         <td colSpan={3} className="text-end">
                           <strong>Total</strong>

@@ -14,6 +14,7 @@ const nextConfig = {
   },
   env: {
     API_URL: process.env.API_URL,
+    APP_VERSION: process.env.npm_package_version,
   },
 };
 
