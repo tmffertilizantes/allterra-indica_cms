@@ -1,7 +1,7 @@
 name: Deploy Production
 
 # Deploy manual para produção: escolha qualquer tag já publicada (criada
-# pelo workflow "Release & Deploy Homolog"), builda o export estático com a
+# pelo workflow "Release", disparado no merge na main), builda o export estático com a
 # API_URL de produção e publica no projeto de produção do Cloudflare Pages.
 # Rodar de novo escolhendo uma tag anterior É o mecanismo de rollback.
 #
