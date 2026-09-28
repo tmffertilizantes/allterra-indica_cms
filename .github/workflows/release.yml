@@ -1,20 +1,19 @@
-name: Release & Deploy Homolog
+name: Release
 
 # Dispara a cada push na main: calcula a próxima versão semântica, versiona
-# o package.json, cria a tag + Release no GitHub, builda o export estático
-# do Next com a API_URL de homologação e publica no projeto de homologação
-# do Cloudflare Pages via Wrangler. Em paralelo, builda a imagem Docker
-# (usando o Dockerfile do repo) e publica no GitHub Container Registry
-# (GHCR) com duas tags, igual ao allterra-indica_api:
-#   - ghcr.io/<org>/tmf-frontend:<versão>  -> imutável, uma por release
-#   - ghcr.io/<org>/tmf-frontend:homolog   -> sempre aponta pra última
-# e dispara o Deploy Webhook do Coolify pra puxar a nova imagem `:homolog`.
+# o package.json e cria a tag + Release no GitHub.
 #
-# Importante: o projeto de homologação no Cloudflare Pages precisa estar
-# com o deploy automático por Git DESLIGADO (Settings > Builds & deployments
-# > Disable automatic deployments), já que agora quem builda e publica é
-# este workflow — caso contrário cada push dispara dois deploys em paralelo
-# (um do Cloudflare, outro deste workflow) e um pode sobrescrever o outro.
+# Este workflow NÃO faz mais deploy em homologação. Homologação é
+# alimentada exclusivamente pela branch `staging` (ver deploy-staging.yml),
+# e produção continua sendo um deploy manual de uma tag criada aqui (ver
+# deploy-production.yml).
+#
+# Fluxo esperado:
+#   1. Criar a branch de trabalho a partir da main.
+#   2. Abrir PR -> staging e PR -> main.
+#   3. Merge na staging => deploy automático em homologação.
+#   4. Homologado, merge na main => nova tag/Release.
+#   5. Rodar "Deploy Production" escolhendo a tag.
 
 on:
   push:
@@ -22,17 +21,15 @@ on:
       - main
 
 concurrency:
-  group: tmf-frontend-homolog
-  cancel-in-progress: true
+  group: tmf-frontend-release
+  cancel-in-progress: false
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    environment: homolog
     outputs:
       tag: ${{ steps.semver.outputs.next }}
     steps:
@@ -72,49 +69,3 @@ jobs:
           name: ${{ steps.semver.outputs.next }}
           body: Changelog Contents
           token: ${{ github.token }}
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.19.0"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build (homolog)
-        env:
-          API_URL: ${{ secrets.API_URL }}
-        run: npm run build
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          build-args: |
-            API_URL=${{ secrets.API_URL }}
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.semver.outputs.next }}
-            ghcr.io/${{ github.repository }}:homolog
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Trigger Coolify deploy
-        run: |
-          curl -fsSL -X POST "${{ secrets.COOLIFY_WEBHOOK_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}"
