@@ -45,4 +45,5 @@ pnpm-lock.yaml
 # testes E2E
 playwright-report/
 test-results/
+test-results-unit/
 tests/e2e/.auth/
