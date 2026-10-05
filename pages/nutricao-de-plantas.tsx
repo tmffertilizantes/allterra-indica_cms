@@ -610,6 +610,13 @@ const Page: NextPage = () => {
                   parseFloat(porcentagem_planta).toFixed(2) ?? "",
 
                 "Valor Calculo": parseFloat(valor_calculo).toFixed(2) ?? "",
+
+                // Spec 008: só faz sentido para nutrição (Fertilidade do Solo fica vazia)
+                "Boro limitado (3,5 kg)": analise.tipo_aplicacao?.includes("PLANTAS")
+                  ? analise.report?.boronLimited === true
+                    ? "Sim"
+                    : "Não"
+                  : "",
               };
             });
 
