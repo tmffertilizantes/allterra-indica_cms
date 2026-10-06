@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import { PostType, NoFilter, DateColumnFilter } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -34,7 +35,7 @@ function NutrientRow({
     setSaving(true);
     try {
       await axios.patch(
-        `${process.env.API_URL}/nutrient/${nutrient.id}`,
+        apiUrl(`/nutrient/${nutrient.id}`),
         { extract, export: exp },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -97,7 +98,7 @@ function NewNutrientRow({
     setSaving(true);
     try {
       await axios.post(
-        `${process.env.API_URL}/nutrient`,
+        apiUrl(`/nutrient`),
         { name, extract, export: exp, cultureId, lang: "pt-BR", active: true },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -152,7 +153,7 @@ function ModalNutrientes({
   token: string;
   onClose: () => void;
 }) {
-  const nutrientsUrl = `${process.env.API_URL}/nutrient`;
+  const nutrientsUrl = apiUrl(`/nutrient`);
 
   const { data: allNutrients, mutate: reloadNutrients } = useSWR(
     cultureId ? [nutrientsUrl, "modal", cultureId] : null,
@@ -223,7 +224,7 @@ function ModalNutrientes({
 
 const Page: NextPage = () => {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/culture`;
+  const url = apiUrl(`/culture`);
 
   const [language, setLanguage] = useState("pt-BR");
   const [nutrientCulture, setNutrientCulture] = useState<{

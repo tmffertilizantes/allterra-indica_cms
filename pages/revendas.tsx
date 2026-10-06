@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { useGlobal } from "@context/global";
@@ -10,7 +11,7 @@ interface CustomComponent {
 
 export default function Revendas() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/resale`;
+  const url = apiUrl(`/resale`);
 
   const fields = [
     {

@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { useGlobal } from "@context/global";
@@ -12,7 +13,7 @@ interface CustomComponent {
 
 export default function Regioes() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/region`;
+  const url = apiUrl(`/region`);
 
   const fields = [
     {

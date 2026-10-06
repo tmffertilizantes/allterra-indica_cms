@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
@@ -47,8 +48,8 @@ const fetcherStates = (url = "", token = "") =>
 
 const Page: NextPage = () => {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/material`;
-  const upload_url = `${process.env.API_URL}/upload`;
+  const url = apiUrl(`/material`);
+  const upload_url = apiUrl(`/upload`);
 
   const [language, setLanguage] = useState("pt-br");
   const [fileLabel, setFileLabel] = useState("");
@@ -280,17 +281,17 @@ const Page: NextPage = () => {
         ];
 
   const { data: categories, error } = useSWR(
-    [`${process.env.API_URL}/materialCategory`, token],
+    [apiUrl(`/materialCategory`), token],
     fetcherCategories
   );
 
   const { data: cultures } = useSWR(
-    [`${process.env.API_URL}/culture`, token],
+    [apiUrl(`/culture`), token],
     fetcherCultures
   );
 
   const { data: states } = useSWR(
-    [`${process.env.API_URL}/state`, token],
+    [apiUrl(`/state`), token],
     fetcherStates
   );
 

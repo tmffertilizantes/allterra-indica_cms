@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import { AlertError } from "@components/Alerts/Alerts";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
@@ -26,7 +27,7 @@ interface CustomComponent {
 
 export default function Produtores() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/producer`;
+  const url = apiUrl(`/producer`);
 
   const [showModalExibir, setShowModalExibir] = useState(false);
   const [loadingModalExibir, setLoadingModalExibir] = useState(false);
@@ -153,7 +154,7 @@ export default function Produtores() {
                       //pega o nome da cultura
                       if (new_current_post.cultureId) {
                         const producer_culture_raw = await axios.get(
-                          `${process.env.API_URL}/culture/id/${new_current_post.cultureId}`,
+                          apiUrl(`/culture/id/${new_current_post.cultureId}`),
                           axios_options
                         );
                         const producer_culture =
@@ -207,7 +208,7 @@ export default function Produtores() {
           fetcherFn: (fetcherDataFn = () => {}, url = "", options = {}) =>
             axios
               .get(
-                `${process.env.API_URL}/producer?includes=analysis,user`,
+                apiUrl(`/producer?includes=analysis,user`),
                 options
               )
               .then(fetcherDataFn),

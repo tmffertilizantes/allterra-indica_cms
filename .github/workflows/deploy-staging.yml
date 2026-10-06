@@ -56,6 +56,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             API_URL=${{ secrets.API_URL }}
+            API_URL_V2=${{ secrets.API_URL_V2 }}
+            CLIENT_CONFIG_DEFAULT=${{ secrets.CLIENT_CONFIG_DEFAULT }}
           tags: |
             ghcr.io/${{ github.repository }}:homolog
             ghcr.io/${{ github.repository }}:staging-${{ github.sha }}
