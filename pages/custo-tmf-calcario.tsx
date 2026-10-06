@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import { DateColumnFilter, NoFilter, PostType } from '@components';
 import { AlertError } from '@components/Alerts/Alerts';
 import LayoutDefault from '@components/Layouts/default';
@@ -14,7 +15,7 @@ import { Spinner, } from 'react-bootstrap';
 
 const Page: NextPage = () => {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/core`;
+  const url = apiUrl(`/core`);
 
   const [csvData, setCsvData] = useState(null);
 
@@ -117,13 +118,13 @@ const Page: NextPage = () => {
           token,
           fetcherFn: (fetcherDataFn = () => {}, _url = "", options = {}) =>
             axios
-              .get(`${process.env.API_URL}/core`, options)
+              .get(apiUrl(`/core`), options)
               .then(fetcherDataFn),
           fetcherDataFn: async (response: AxiosResponse) => {
             const cores_raw = response.data.cores.data;
 
             const users_raw = await axios.get(
-              `${process.env.API_URL}/user`,
+              apiUrl(`/user`),
               axios_options
             );
             const users = users_raw.data.users;

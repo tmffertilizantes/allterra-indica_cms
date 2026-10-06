@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { NextPage } from "next";
@@ -14,7 +15,7 @@ interface CustomComponent {
 
 export default function Nutrientes() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/nutrient`;
+  const url = apiUrl(`/nutrient`);
 
   const fields = [
     {
@@ -69,7 +70,7 @@ export default function Nutrientes() {
       .then((res) => res.data.cultures);
 
   const { data: cultures, error } = useSWR(
-    [`${process.env.API_URL}/culture`, token],
+    [apiUrl(`/culture`), token],
     fetcherCultures
   );
 

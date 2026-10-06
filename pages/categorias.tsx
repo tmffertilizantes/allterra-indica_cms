@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import { PostType } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -13,7 +14,7 @@ interface CustomComponent {
 
 const Page: NextPage = () => {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/category`;
+  const url = apiUrl(`/category`);
 
   const [language, setLanguage] = useState("pt-br")
 

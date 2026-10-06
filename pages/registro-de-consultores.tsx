@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { NoFilter } from "@components";
@@ -36,7 +37,7 @@ interface Consultor {
 
 export default function RegistroDeConsultores() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/consultant`;
+  const url = apiUrl(`/consultant`);
 
   const [showModalFilter, setShowModalFilter] = useState(false);
   const [startDate, setStartDate] = useState<string>("2000-01-01");
@@ -142,14 +143,14 @@ export default function RegistroDeConsultores() {
           token,
           fetcherFn: (
             fetcherDataFn = () => {},
-            url = `${process.env.API_URL}/consultant/report?start_date=${startDate ?? "2000-01-01"
-              }&end_date=${endDate ?? getTodayDate()}`,
+            url = apiUrl(`/consultant/report?start_date=${startDate ?? "2000-01-01"
+              }&end_date=${endDate ?? getTodayDate()}`),
             options = {}
           ) =>
             axios
               .get(
-                `${process.env.API_URL}/consultant/report?start_date=${startDate ?? "2000-01-01"
-                }&end_date=${endDate ?? getTodayDate()}`,
+                apiUrl(`/consultant/report?start_date=${startDate ?? "2000-01-01"
+                }&end_date=${endDate ?? getTodayDate()}`),
                 options
               )
               .then(fetcherDataFn),

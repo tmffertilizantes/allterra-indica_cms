@@ -14,6 +14,8 @@ const nextConfig = {
   },
   env: {
     API_URL: process.env.API_URL,
+    API_URL_V2: process.env.API_URL_V2 || '',
+    CLIENT_CONFIG_DEFAULT: process.env.CLIENT_CONFIG_DEFAULT || '',
     APP_VERSION: process.env.npm_package_version,
   },
 };

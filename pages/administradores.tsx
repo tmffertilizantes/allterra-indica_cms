@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -19,8 +20,8 @@ interface CustomComponent {
 
 const Page: NextPage = () => {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/user`;
-  const register_url = `${process.env.API_URL}/auth/register`;
+  const url = apiUrl(`/user`);
+  const register_url = apiUrl(`/auth/register`);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -39,7 +40,7 @@ const Page: NextPage = () => {
       .then((res) => res.data.roles);
 
   const { data: roles } = useSWR(
-    [`${process.env.API_URL}/role`, token],
+    [apiUrl(`/role`), token],
     fetcherRoles
   );
 
