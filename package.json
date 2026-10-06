@@ -1,6 +1,6 @@
 {
   "name": "tmf",
-  "version": "v1.6.2",
+  "version": "v1.7.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:unit": "playwright test -c playwright.unit.config.ts"
   },
   "volta": {
     "node": "20.19.0"

@@ -4,6 +4,7 @@ import { useGlobal } from "@context/global";
 import axios, { AxiosResponse } from "axios";
 import LayoutDefault from "@components/Layouts/default";
 import { ColumnFn } from "models/ColumnFn";
+import { deliveredNutrientValues } from "utils/deliveredNutrients";
 import ModalExibirPost from "@components/postType/ModalExibirPost";
 import ShowButton from "@components/Utils/Buttons/ShowButton";
 import { useState } from "react";
@@ -326,18 +327,16 @@ const Page: NextPage = () => {
 
               if (analise.tipo_aplicacao.includes("PLANTAS")) {
                 if (analise.report.AditionalInformation) {
-                  qtd_ca_entregue =
-                    analise.report.AditionalInformation[0].value ?? "";
-                  qtd_si_entregue =
-                    analise.report.AditionalInformation[1].value ?? "";
-                  qtd_mg_entregue =
-                    analise.report.AditionalInformation[2].value ?? "";
-                  qtd_b_entregue =
-                    analise.report.AditionalInformation[3].value ?? "";
-                  qtd_s_entregue =
-                    analise.report.AditionalInformation[4].value ?? "";
-                  qtd_n_entregue =
-                    analise.report.AditionalInformation[5].value ?? "";
+                  // Spec 010: por sigla/descrição, não por posição (a ordem gravada variou).
+                  const delivered = deliveredNutrientValues(
+                    analise.report.AditionalInformation
+                  );
+                  qtd_ca_entregue = String(delivered.Ca);
+                  qtd_si_entregue = String(delivered.Si);
+                  qtd_mg_entregue = String(delivered.Mg);
+                  qtd_b_entregue = String(delivered.B);
+                  qtd_s_entregue = String(delivered.S);
+                  qtd_n_entregue = String(delivered.N);
                 }
 
                 if (analise.report.Dosage) {
@@ -610,6 +609,13 @@ const Page: NextPage = () => {
                   parseFloat(porcentagem_planta).toFixed(2) ?? "",
 
                 "Valor Calculo": parseFloat(valor_calculo).toFixed(2) ?? "",
+
+                // Spec 008: só faz sentido para nutrição (Fertilidade do Solo fica vazia)
+                "Boro limitado (3,5 kg)": analise.tipo_aplicacao?.includes("PLANTAS")
+                  ? analise.report?.boronLimited === true
+                    ? "Sim"
+                    : "Não"
+                  : "",
               };
             });
 

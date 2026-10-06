@@ -120,13 +120,14 @@ export default function NavBar() {
             </Link>
           </li>
 
-          <li className="nav-item">
+          {/* Descomentar para Sprint 04 */}
+          {/* <li className="nav-item">
             <Link href="/dimensionamento-bem">
               <a className="nav-link">
                 <i className="nav-icon fe fe-pie-chart me-2"></i>Dimensionamento BEM
               </a>
             </Link>
-          </li>
+          </li> */}
 
           <li className="nav-item">
             <Link href="/culturas">
