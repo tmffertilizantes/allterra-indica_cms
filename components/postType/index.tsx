@@ -1,3 +1,4 @@
+import { apiUrl } from "../../lib/api";
 import {
   useMemo,
   useState,
@@ -222,14 +223,6 @@ const defaultFieldForm = ({
   );
 };
 
-/*
-dataConfig: {
-    url = 'http://api.tmf.pullup.tech/api/v1/region',
-    fetcherDataFn = (res) => res.data.regions
-    token = ''
-  }
-*/
-
 const PostType = ({
   queryParams = null,
   initialPostData = null,
@@ -378,7 +371,7 @@ const PostType = ({
     };
 
     const result = await axios.delete(
-      `${process.env.API_URL}/consultant/soft/${post.id}`,
+      apiUrl(`/consultant/soft/${post.id}`),
       options
     );
 

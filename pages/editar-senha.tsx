@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import Logo from "@components/Logo";
 import axios from "axios";
 import Link from "next/link";
@@ -23,7 +24,7 @@ export default function EsqueciMinhaSenha() {
 
     try {
       const response = await axios.patch(
-        `${process.env.API_URL}/auth/update-password`,
+        apiUrl(`/auth/update-password`),
         {
           newPassword: password,
           newPasswordConfirmation: confirmPassword,

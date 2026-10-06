@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import {
   AlertError,
   AlertItemEdited,
@@ -22,7 +23,6 @@ import React, { useState } from "react";
 import { Form } from "react-bootstrap";
 import Select from "react-select";
 import useSWR from "swr";
-import { Modal } from "react-bootstrap";
 import TrashButton from "@components/Utils/Buttons/TrashButton";
 
 interface CustomComponent {
@@ -85,114 +85,29 @@ interface Consultor {
 
 export default function Consultores() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/consultant`;
+  const url = apiUrl(`/consultant`);
 
   const [estado, setEstado] = useState<number | null>(null);
   const [csvData, setCsvData] = useState(null);
-
-  const [showModalConfirm, setShowModalConfirm] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [savingNewPassword, setSavingNewPassword] = useState(false);
-
-  async function generateNewPassword(email: string) {
-    setSavingNewPassword(true);
-
-    var chars =
-      "0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    var passwordLength = 8;
-    var password = "";
-
-    for (var i = 0; i <= passwordLength; i++) {
-      var randomNumber = Math.floor(Math.random() * chars.length);
-      password += chars.substring(randomNumber, randomNumber + 1);
-    }
-
-    setNewPassword(password);
-
-    try {
-      const response = await axios.patch(
-        `${process.env.API_URL}/auth/reset-password`,
-        {
-          email: email,
-          newPassword: password,
-        }
-      );
-    } catch (error) {
-      console.error(error);
-    }
-
-    setSavingNewPassword(false);
-    setShowNewPassword(true);
-  }
 
   const fields = [
     {
       Component: ({ post, setPost }: CustomComponent) => (
         <div className="mb-3">
+          {/*
+            Redefinição de senha pelo administrador suspensa: a rota legada PATCH /auth/reset-password
+            (achado #1) foi bloqueada na borda no dia 1 da migração. Volta na Fase 1 via
+            /admin/users/:id/reset-password (specs/013-fase0-consumidores-borda, FR-019a).
+          */}
           <div className="text-end">
-            <button
-              className="btn btn-outline-white btn-sm"
-              onClick={() => setShowModalConfirm(true)}
-            >
+            <button className="btn btn-outline-white btn-sm" disabled>
               Gerar nova senha
             </button>
+            <div className="form-text">
+              Indisponível temporariamente. Peça ao consultor para usar &quot;Esqueci minha
+              senha&quot; no app.
+            </div>
           </div>
-
-          <Modal
-            show={showModalConfirm}
-            onHide={() => {
-              setShowModalConfirm(false);
-              setShowNewPassword(false);
-            }}
-            style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
-            animation={false}
-            centered
-            size="sm"
-          >
-            <Modal.Header closeButton>
-              <Modal.Title>Confirmar Nova Senha</Modal.Title>
-            </Modal.Header>
-
-            <Modal.Body className="text-center">
-              {showNewPassword ? (
-                <>
-                  {savingNewPassword ? (
-                    <>Gerando nova senha...</>
-                  ) : (
-                    <>
-                      Sua nova senha é: <br></br>
-                      {newPassword}
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  Deseja gerar uma nova senha?
-                  <div className="d-flex gap-3 mt-4 justify-content-center">
-                    <button
-                      className="btn btn-outline-primary btn-sm"
-                      onClick={() => {
-                        if (savingNewPassword) {
-                          return;
-                        }
-                        generateNewPassword(post.user.email);
-                      }}
-                    >
-                      Sim
-                    </button>
-
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => setShowModalConfirm(false)}
-                    >
-                      Não
-                    </button>
-                  </div>
-                </>
-              )}
-            </Modal.Body>
-          </Modal>
         </div>
       ),
     },
@@ -454,7 +369,7 @@ export default function Consultores() {
   ) => {
     try {
       const updateConsultantUser = axios.patch(
-        `${process.env.API_URL}/user/${post.user.id}`,
+        apiUrl(`/user/${post.user.id}`),
         {
           name: post.user.name,
           identification: post.user.identification,
@@ -468,7 +383,7 @@ export default function Consultores() {
       );
 
       const updateConsultant = axios.patch(
-        `${process.env.API_URL}/consultant/${post.id}`,
+        apiUrl(`/consultant/${post.id}`),
         {
           resaleId: post.resaleId,
           regionId: post.regionId,
@@ -499,7 +414,7 @@ export default function Consultores() {
   };
 
   const { data: users, error } = useSWR(
-    [`${process.env.API_URL}/user`, token],
+    [apiUrl(`/user`), token],
     fetcherUsers
   );
 
@@ -509,7 +424,7 @@ export default function Consultores() {
   }));
 
   const { data: regions } = useSWR(
-    [`${process.env.API_URL}/region`, token],
+    [apiUrl(`/region`), token],
     fetcherRegions
   );
 
@@ -521,7 +436,7 @@ export default function Consultores() {
   );
 
   const { data: resale } = useSWR(
-    [`${process.env.API_URL}/resale`, token],
+    [apiUrl(`/resale`), token],
     fetcherResales
   );
 
@@ -601,7 +516,7 @@ export default function Consultores() {
                       };
 
                       await axios.patch(
-                        `${process.env.API_URL}/user/${currentPost.user.id}`,
+                        apiUrl(`/user/${currentPost.user.id}`),
                         {
                           active: !currentPost.user["active"],
                         },
@@ -681,7 +596,7 @@ export default function Consultores() {
             return consultant_list;
           },
           updateUrlFn: (url = "", id = "") =>
-            `${process.env.API_URL}/user/${id}`,
+            apiUrl(`/user/${id}`),
           updateFn: updateFn,
         }}
         tableConfig={{

@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -23,7 +24,7 @@ const formatLitros = (value?: number | null) =>
 
 const Page: NextPage = () => {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/bemSizing`;
+  const url = apiUrl(`/bemSizing`);
 
   const [showModalExibir, setShowModalExibir] = useState(false);
   const [currentPost, setCurrentPost] = useState<any>({});
@@ -143,8 +144,8 @@ const Page: NextPage = () => {
             const bemSizings = response.data.bemSizings || [];
 
             const [producersRes, consultantsRes] = await Promise.all([
-              axios.get(`${process.env.API_URL}/producer`, axiosOptions),
-              axios.get(`${process.env.API_URL}/consultant`, axiosOptions),
+              axios.get(apiUrl(`/producer`), axiosOptions),
+              axios.get(apiUrl(`/consultant`), axiosOptions),
             ]);
             const producers = producersRes.data.producers || [];
             const consultants = consultantsRes.data.consultants || [];

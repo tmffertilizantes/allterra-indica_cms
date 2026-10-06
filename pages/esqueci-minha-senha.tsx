@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import Logo from "@components/Logo";
 import axios from "axios";
 import Link from "next/link";
@@ -13,7 +14,7 @@ export default function EsqueciMinhaSenha() {
 
     try {
       const response = await axios.post(
-        `${process.env.API_URL}/auth/forgot-password`,
+        apiUrl(`/auth/forgot-password`),
         {
           email: email,
         }

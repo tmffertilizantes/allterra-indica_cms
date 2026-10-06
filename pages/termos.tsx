@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { useGlobal } from "@context/global";
@@ -25,7 +26,7 @@ const fetcherTerms = (url = "", token = "") =>
 
 export default function Termos() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/terms`;
+  const url = apiUrl(`/terms`);
 
   const [descricao, setDescricao] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -56,7 +57,7 @@ export default function Termos() {
   }
 
   const { data: terms, error } = useSWR(
-    [`${process.env.API_URL}/terms`, token],
+    [apiUrl(`/terms`), token],
     fetcherTerms
   );
 

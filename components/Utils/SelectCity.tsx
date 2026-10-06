@@ -1,3 +1,4 @@
+import { apiUrl } from "../../lib/api";
 import { useGlobal } from "@context/global";
 import axios from "axios";
 import { Cidade } from "models/cidade";
@@ -15,7 +16,7 @@ interface Props {
 
 export default function SelectCity(props: Props) {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/state/${props.state}?includes=city`;
+  const url = apiUrl(`/state/${props.state}?includes=city`);
 
   const fetcherCities = (url = "", token = "") =>
     axios

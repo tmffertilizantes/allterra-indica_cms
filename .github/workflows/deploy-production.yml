@@ -65,6 +65,8 @@ jobs:
       - name: Build (production)
         env:
           API_URL: ${{ secrets.API_URL }}
+          API_URL_V2: ${{ secrets.API_URL_V2 }}
+          CLIENT_CONFIG_DEFAULT: ${{ secrets.CLIENT_CONFIG_DEFAULT }}
         run: npm run build
 
       - name: Deploy to Cloudflare Pages (production)

@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import { useState } from "react";
 import Router, { useRouter } from "next/router";
 import axios from "axios";
@@ -7,6 +8,15 @@ import { userIsLogged } from "@context/user";
 import Logo from "@components/Logo";
 import { useGlobal } from "@context/global";
 import Link from "next/link";
+
+/** Cookies de sessão: só HTTPS (exceto desenvolvimento local em HTTP) e restritos ao próprio site (#15). */
+const sessionCookieOptions = () => ({
+  maxAge: 30 * 24 * 60 * 60,
+  path: "/",
+  sameSite: "strict" as const,
+  secure: typeof window !== "undefined" && window.location.protocol === "https:",
+});
+
 
 interface UserLogin {
   email: string | undefined;
@@ -25,7 +35,6 @@ export default function Login() {
     password: undefined,
   });
 
-  const BASE_URL = process.env.API_URL;
 
   const { user = "" } = useGlobal();
 
@@ -53,12 +62,9 @@ export default function Login() {
         headers: { Authorization: `Bearer ${token}` },
       };
 
-      const response_me = await axios.get(`${BASE_URL}/auth/me`, config);
+      const response_me = await axios.get(apiUrl(`/auth/me`), config);
 
-      setCookie(null, "user", JSON.stringify(response_me.data.user), {
-        maxAge: 30 * 24 * 60 * 60,
-        path: "/",
-      });
+      setCookie(null, "user", JSON.stringify(response_me.data.user), sessionCookieOptions());
     } catch (error) {
       console.error(error);
     }
@@ -68,7 +74,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post(`${BASE_URL}/auth/login`, {
+      const response = await axios.post(apiUrl(`/auth/login`), {
         email: login.email,
         password: login.password,
       });
@@ -79,10 +85,7 @@ export default function Login() {
       if (user_role_id === 1 || user_role_id === 2) {
         const user_token = response.data.token;
 
-        setCookie(null, "USER_TOKEN", user_token, {
-          maxAge: 30 * 24 * 60 * 60,
-          path: "/",
-        });
+        setCookie(null, "USER_TOKEN", user_token, sessionCookieOptions());
 
         await getUserByToken(user_token);
 

@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import axios from "axios";
 import { Cidade } from "models/cidade";
 import router from "next/router";
@@ -30,15 +31,15 @@ export function getUserToken() {
 }
 
 export function logout() {
-  destroyCookie(null, 'USER_TOKEN')
-  destroyCookie(null, 'user')
+  destroyCookie(null, 'USER_TOKEN', { path: '/' })
+  destroyCookie(null, 'user', { path: '/' })
   router.push("/login");
 }
 
 export async function getUserLocation(stateId: number, cityId: number) {
   try {
     const location_raw = await axios.get(
-      `${process.env.API_URL}/state/${stateId}?includes=city`,
+      apiUrl(`/state/${stateId}?includes=city`),
       axios_options
     );
 

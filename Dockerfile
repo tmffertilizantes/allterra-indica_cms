@@ -2,6 +2,8 @@ FROM node:18-alpine AS base
 
 # Env variables
 ARG API_URL
+ARG API_URL_V2
+ARG CLIENT_CONFIG_DEFAULT
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -16,7 +18,11 @@ RUN npm ci
 # Rebuild the source code only when needed
 FROM base AS builder
 ARG API_URL
+ARG API_URL_V2
+ARG CLIENT_CONFIG_DEFAULT
 ENV API_URL=$API_URL
+ENV API_URL_V2=$API_URL_V2
+ENV CLIENT_CONFIG_DEFAULT=$CLIENT_CONFIG_DEFAULT
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

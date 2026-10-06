@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { DateColumnFilter, NoFilter } from "@components/Table";
@@ -28,7 +29,7 @@ const fetcherCategories = (url = "", token = "") =>
 
 export default function Produtos() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/product`;
+  const url = apiUrl(`/product`);
 
   const [language, setLanguage] = useState("pt-br");
   const [productImage, setProductImage] = useState<{b64?: string, name?: string}>({})
@@ -472,7 +473,7 @@ const handleFileB64 = (event: React.ChangeEvent<HTMLInputElement>, setPost: any)
 };
 
   const { data: categories, error } = useSWR(
-    [`${process.env.API_URL}/category`, token],
+    [apiUrl(`/category`), token],
     fetcherCategories
   );
 
@@ -582,7 +583,7 @@ const handleFileB64 = (event: React.ChangeEvent<HTMLInputElement>, setPost: any)
           fetcherFn: (fetcherDataFn = () => {}, url = "", options = {}) =>
             axios
               .get(
-                `${process.env.API_URL}/product?includes=category,analysis`,
+                apiUrl(`/product?includes=category,analysis`),
                 options
               )
               .then(fetcherDataFn),

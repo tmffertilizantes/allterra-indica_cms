@@ -3,6 +3,26 @@
   "rules": {
     "react/no-unescaped-entities": "off",
     "@next/next/no-page-custom-font": "off",
-    "@next/next/no-html-link-for-pages": "off"
-  }
+    "@next/next/no-html-link-for-pages": "off",
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "MemberExpression[object.object.name='process'][object.property.name='env'][property.name='API_URL']",
+        "message": "Use apiUrl()/api de lib/api.ts: a base (v1 ou v2) é resolvida por módulo."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "lib/**",
+        "tests/**",
+        "playwright*.ts",
+        "next.config.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": "off"
+      }
+    }
+  ]
 }

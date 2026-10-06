@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -20,7 +21,7 @@ interface Report {}
 
 const Page: NextPage = () => {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/analysis`;
+  const url = apiUrl(`/analysis`);
 
   const [csvData, setCsvData] = useState(null);
   const [showModalExibir, setShowModalExibir] = useState(false);
@@ -143,7 +144,7 @@ const Page: NextPage = () => {
                         // //pega o nome da cultura
                         // if (new_current_post.producer.cultureId) {
                         //   const producer_culture_raw = await axios.get(
-                        //     `${process.env.API_URL}/culture/id/${new_current_post.producer.cultureId}`,
+                        //     apiUrl(`/culture/id/${new_current_post.producer.cultureId}`),
                         //     axios_options
                         //   );
                         //   const producer_culture =
@@ -156,7 +157,7 @@ const Page: NextPage = () => {
                         // }
 
                         // const pdf_url = await axios.get(
-                        //   `${process.env.API_URL}/email_template/showAnalysisPdf/${new_current_post.id}`,
+                        //   apiUrl(`/email_template/showAnalysisPdf/${new_current_post.id}`),
                         //   axios_options
                         // );
 
@@ -216,7 +217,7 @@ const Page: NextPage = () => {
           fetcherFn: (fetcherDataFn = () => {}, url = "", options = {}) =>
             axios
               .get(
-                `${process.env.API_URL}/analysis?includes=consultant,producer,culture,investment,product`,
+                apiUrl(`/analysis?includes=consultant,producer,culture,investment,product`),
                 options
               )
               .then(fetcherDataFn),
@@ -224,7 +225,7 @@ const Page: NextPage = () => {
             const analises_raw = response.data.analysiss;
 
             const producers_raw = await axios.get(
-              `${process.env.API_URL}/producer?includes=culture`,
+              apiUrl(`/producer?includes=culture`),
               axios_options
             );
             const producers = producers_raw.data.producers;

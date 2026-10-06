@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import LayoutDefault from "@components/Layouts/default";
 import { useGlobal } from "@context/global";
 import { useEffect, useState } from "react";
@@ -132,7 +133,7 @@ function SortableSectionItem({
 
 export default function PersonalizacaoResultados() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/resultSectionOrder`;
+  const url = apiUrl(`/resultSectionOrder`);
 
   const [rows, setRows] = useState<ResultSectionOrder[]>([]);
   const [activeType, setActiveType] = useState<ResultSectionOrder["analysisType"]>("nutrition");

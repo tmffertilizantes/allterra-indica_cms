@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { NoFilter, DateColumnFilter } from "@components/Table";
@@ -35,7 +36,7 @@ const handleFileB64 = (
 
 export default function ProdutosMicrogeo() {
   const { token = "" } = useGlobal();
-  const url = `${process.env.API_URL}/microgeoPrice`;
+  const url = apiUrl(`/microgeoPrice`);
 
   const fields = [
     {
