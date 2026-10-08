@@ -1,4 +1,5 @@
 import { apiUrl } from "../lib/api";
+import { fetchAllUsers } from "../lib/users";
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -123,11 +124,8 @@ const Page: NextPage = () => {
           fetcherDataFn: async (response: AxiosResponse) => {
             const cores_raw = response.data.cores.data;
 
-            const users_raw = await axios.get(
-              apiUrl(`/user`),
-              axios_options
-            );
-            const users = users_raw.data.users;
+            // v1 `GET /user` ou v2 `/admin/users` paginado (specs/016).
+            const users = await fetchAllUsers();
 
             const cores = cores_raw
               .map((core: any) => {

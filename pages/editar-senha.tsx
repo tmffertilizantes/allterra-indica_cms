@@ -4,6 +4,8 @@ import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { apiVersion } from "../lib/clientConfig";
+import { serverMessage } from "../lib/users";
 
 export default function EsqueciMinhaSenha() {
   const [step, setStep] = useState(1);
@@ -18,9 +20,40 @@ export default function EsqueciMinhaSenha() {
   const [showErrorMessage, setShowErrorMessage] = useState<boolean>(false);
 
   const router = useRouter();
+  const isV2 = apiVersion("auth") === "v2";
+  const [email, setEmail] = useState("");
+  const [errorText, setErrorText] = useState("Ocorreu um erro ao atualizar a senha");
+  const emailValue = email || (typeof router.query.email === "string" ? router.query.email : "");
+
+  /** v2: e-mail + código de 6 dígitos + nova senha (POST /auth/reset-password). */
+  async function submitResetV2() {
+    try {
+      await axios.post(apiUrl(`/auth/reset-password`), {
+        email: emailValue,
+        code,
+        newPassword: password,
+        newPasswordConfirmation: confirmPassword,
+      });
+      setShowMessage(true);
+      setTimeout(() => router.push("/login"), 1500);
+    } catch (error: any) {
+      setErrorText(
+        error?.response?.status === 429
+          ? "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+          : serverMessage(error, "Código inválido ou expirado")
+      );
+      setShowErrorMessage(true);
+    }
+  }
 
   async function submitNewPassword() {
     setIsSubmitting(true);
+
+    if (isV2) {
+      await submitResetV2();
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await axios.patch(
@@ -75,7 +108,7 @@ export default function EsqueciMinhaSenha() {
   }
 
   function validatePassword(pass: string) {
-    if (pass.length > 0 && pass.length < 8) {
+    if (pass.length > 0 && (pass.length < 8 || pass.length > 72)) {
       setPasswordIsValid(false);
     } else {
       setPasswordIsValid(true);
@@ -110,6 +143,38 @@ export default function EsqueciMinhaSenha() {
               </div>
 
               <form onSubmit={handleSubmit}>
+                {isV2 && (
+                  <>
+                    <div className="mb-3">
+                      <label htmlFor="email" className="form-label">
+                        Email
+                      </label>
+                      <input
+                        value={emailValue}
+                        type="email"
+                        id="email"
+                        className="form-control"
+                        name="email"
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label htmlFor="code" className="form-label">
+                        Código recebido por e-mail
+                      </label>
+                      <input
+                        value={code}
+                        inputMode="numeric"
+                        maxLength={6}
+                        id="code"
+                        className="form-control"
+                        name="code"
+                        placeholder="000000"
+                        onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label">
                     Nova Senha
@@ -144,7 +209,7 @@ export default function EsqueciMinhaSenha() {
                       <span>Senhas incompatíveis</span>
                     )}
                     {!passwordIsValid && (
-                      <span>A senha precisa ter no mínimo 8 caracteres</span>
+                      <span>A senha precisa ter de 8 a 72 caracteres</span>
                     )}
                   </div>
                 )}
@@ -159,9 +224,7 @@ export default function EsqueciMinhaSenha() {
 
                 {showErrorMessage && (
                   <div className="mb-3 text-center">
-                    <span className="text-danger">
-                      Ocorreu um erro ao atualizar a senha
-                    </span>
+                    <span className="text-danger">{errorText}</span>
                   </div>
                 )}
 
