@@ -24,6 +24,19 @@ import { Form } from "react-bootstrap";
 import Select from "react-select";
 import useSWR from "swr";
 import TrashButton from "@components/Utils/Buttons/TrashButton";
+import Swal from "sweetalert2";
+import {
+  fetchAllUsers,
+  isUserV2,
+  resetUserPassword,
+  serverMessage,
+  setActive,
+  setApproval,
+  updateUser,
+} from "../lib/users";
+
+/** Status de aprovação carregado na lista: approve/disapprove só quando ele mudar (v2). */
+const loadedStatus: Record<number, string | null | undefined> = {};
 
 interface CustomComponent {
   post: any;
@@ -95,18 +108,40 @@ export default function Consultores() {
       Component: ({ post, setPost }: CustomComponent) => (
         <div className="mb-3">
           {/*
-            Redefinição de senha pelo administrador suspensa: a rota legada PATCH /auth/reset-password
-            (achado #1) foi bloqueada na borda no dia 1 da migração. Volta na Fase 1 via
-            /admin/users/:id/reset-password (specs/013-fase0-consumidores-borda, FR-019a).
+            Redefinição pelo administrador: com `user` na v2, POST /admin/users/:id/reset-password
+            gera uma senha temporária e a envia ao consultor (nunca aparece aqui — specs/016,
+            FR-032). No legado a rota segue bloqueada na borda desde o dia 1 (spec 013).
           */}
           <div className="text-end">
-            <button className="btn btn-outline-white btn-sm" disabled>
+            <button
+              type="button"
+              className="btn btn-outline-white btn-sm"
+              disabled={!isUserV2() || !post?.user?.id}
+              onClick={async () => {
+                const answer = await Swal.fire({
+                  icon: "warning",
+                  title: "Gerar nova senha?",
+                  text: "Uma senha temporária será enviada ao consultor por e-mail e WhatsApp, e as sessões abertas dele serão encerradas.",
+                  showCancelButton: true,
+                  confirmButtonText: "Gerar e enviar",
+                  cancelButtonText: "Cancelar",
+                });
+                if (!answer.isConfirmed) return;
+                try {
+                  await resetUserPassword(post.user.id);
+                  Swal.fire({ icon: "success", title: "Nova senha enviada ao consultor" });
+                } catch (error) {
+                  Swal.fire({ icon: "error", title: "Erro", text: serverMessage(error, "Não foi possível gerar a senha") });
+                }
+              }}>
               Gerar nova senha
             </button>
-            <div className="form-text">
-              Indisponível temporariamente. Peça ao consultor para usar &quot;Esqueci minha
-              senha&quot; no app.
-            </div>
+            {!isUserV2() && (
+              <div className="form-text">
+                Indisponível temporariamente. Peça ao consultor para usar &quot;Esqueci minha
+                senha&quot; no app.
+              </div>
+            )}
           </div>
         </div>
       ),
@@ -368,6 +403,7 @@ export default function Consultores() {
     fetcherDataFn = (result: any) => {}
   ) => {
     try {
+      if (isUserV2()) return await updateFnV2(url, options, post, fetcherDataFn);
       const updateConsultantUser = axios.patch(
         apiUrl(`/user/${post.user.id}`),
         {
@@ -413,9 +449,35 @@ export default function Consultores() {
     }
   };
 
+  /** v2 (specs/016): dados pessoais em /admin/users/:id, aprovação em endpoint próprio. */
+  const updateFnV2 = async (
+    url: string,
+    options: object,
+    post: Consultor,
+    fetcherDataFn: (result: any) => any
+  ) => {
+    try {
+      const userId = post.user.id as number;
+      const approved = post.user.status === "approved";
+      await Promise.all([
+        updateUser(userId, post.user as any),
+        axios.patch(
+          apiUrl(`/consultant/${post.id}`),
+          { resaleId: post.resaleId, regionId: post.regionId, betaTester: post.betaTester },
+          options
+        ),
+      ]);
+      if (approved !== (loadedStatus[userId] === "approved")) await setApproval(userId, approved);
+      AlertItemEdited();
+    } catch (error) {
+      Swal.fire({ icon: "error", title: "Erro", text: serverMessage(error, "Não foi possível salvar") });
+    }
+    return fetcherDataFn(await axios.get(url, options));
+  };
+
   const { data: users, error } = useSWR(
-    [apiUrl(`/user`), token],
-    fetcherUsers
+    isUserV2() ? ["users-all", token] : [apiUrl(`/user`), token],
+    isUserV2() ? () => fetchAllUsers() : fetcherUsers
   );
 
   const users_as_options = users?.map((user: { id: any; name: any }) => ({
@@ -515,13 +577,12 @@ export default function Consultores() {
                         },
                       };
 
-                      await axios.patch(
-                        apiUrl(`/user/${currentPost.user.id}`),
-                        {
-                          active: !currentPost.user["active"],
-                        },
-                        options
-                      );
+                      try {
+                        await setActive(currentPost.user.id, !currentPost.user["active"]);
+                      } catch (error) {
+                        AlertError();
+                        return;
+                      }
 
                       const result = await axios.get(url, options);
 
@@ -565,6 +626,7 @@ export default function Consultores() {
             var consultant_list: any[] = [];
 
             var data_for_csv = consultant.map((consultant: any) => {
+              if (consultant.user?.id) loadedStatus[consultant.user.id] = consultant.user.status;
               if (consultant.deletedAt === null) {
                 consultant_list.push({
                   ...consultant,

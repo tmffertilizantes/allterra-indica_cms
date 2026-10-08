@@ -107,17 +107,34 @@ export function apiBases(): Record<ApiVersion, string | undefined> {
   };
 }
 
-/** Primeiro segmento do caminho = nome do módulo legado. URL absoluta → `null`. */
+/**
+ * Rotas da v2 cujo 1º segmento não é módulo do legado (specs/016, research R3): `users/me` e
+ * `admin/*` pertencem ao módulo `user` e ligam junto com ele.
+ */
+const MODULE_ALIASES: Record<string, string> = { users: "user", admin: "user" };
+
+/** Primeiro segmento do caminho = nome do módulo legado (com aliases). URL absoluta → `null`. */
 export function resolveModule(path: string): string | null {
   if (!path || /^https?:\/\//i.test(path)) return null;
   const segment = path.replace(/^\/+/, "").split(/[/?#]/)[0];
-  return segment || null;
+  if (!segment) return null;
+  return MODULE_ALIASES[segment] ?? segment;
 }
 
 /** Versão que atende o módulo; usar quando o contrato da v2 diferir do legado (Fase 1+). */
 export function apiVersion(moduleName: string): ApiVersion {
   const config = getActiveClientConfig();
-  return config.modules[moduleName] ?? config.default;
+  const version = config.modules[moduleName] ?? config.default;
+  // A v2 nunca aceita token legado: sem `auth` em v2, user/preferences ficam na v1 (R2).
+  if ((moduleName === "user" || moduleName === "preferences") && version === "v2") {
+    return (config.modules.auth ?? config.default) === "v2" ? "v2" : "v1";
+  }
+  return version;
+}
+
+/** Versão do CMS enviada ao /client-config (`targets.cms.minVersion` — research R1 da 016). */
+export function cmsVersion(): string {
+  return (process.env.NEXT_PUBLIC_CMS_VERSION || "").replace(/^v/, "");
 }
 
 let warnedMissingV2 = false;
@@ -150,6 +167,7 @@ export async function loadClientConfig(): Promise<void> {
   try {
     const response = await clientConfigHttp.get("/client-config", {
       baseURL,
+      params: { client: "cms", version: cmsVersion() },
       headers: current?.etag ? { "If-None-Match": current.etag } : undefined,
     });
 
