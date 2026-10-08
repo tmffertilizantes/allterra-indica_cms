@@ -7,6 +7,7 @@ import LayoutDefault from "@components/Layouts/default";
 import { useState } from "react";
 import ModalExibirPost from "@components/postType/ModalExibirPost";
 import { Spinner, Table } from "react-bootstrap";
+import { budgetBags } from "utils/bemBags";
 import { ColumnFn } from "models/ColumnFn";
 import ShowButton from "@components/Utils/Buttons/ShowButton";
 import { AlertError } from "@components/Alerts/Alerts";
@@ -226,7 +227,7 @@ const Page: NextPage = () => {
                 </tr>
                 {currentPost?.mode === "weekly" ? (
                   <tr>
-                    <td>Aplicações por semana</td>
+                    <td>Semanas de Aplicação / Giros</td>
                     <td>{currentPost?.inputs?.aplicacoesPorSemana ?? "-"}</td>
                   </tr>
                 ) : (
@@ -280,6 +281,7 @@ const Page: NextPage = () => {
                     <thead>
                       <tr>
                         <th>Item</th>
+                        <th className="text-end">Sacas</th>
                         <th className="text-end">Custo/kg</th>
                         <th className="text-end">Custo total</th>
                       </tr>
@@ -287,6 +289,9 @@ const Page: NextPage = () => {
                     <tbody>
                       <tr>
                         <td>Microgeo Start</td>
+                        <td className="text-end">
+                          {budgetBags(currentPost.result).start}
+                        </td>
                         <td className="text-end">
                           {formatBRL(currentPost.result.custoUnitStartPorKg)}
                         </td>
@@ -297,6 +302,9 @@ const Page: NextPage = () => {
                       <tr>
                         <td>Microgeo Reposição</td>
                         <td className="text-end">
+                          {budgetBags(currentPost.result).reposicao}
+                        </td>
+                        <td className="text-end">
                           {formatBRL(currentPost.result.custoUnitReposicaoPorKg)}
                         </td>
                         <td className="text-end">
@@ -304,7 +312,7 @@ const Page: NextPage = () => {
                         </td>
                       </tr>
                       <tr>
-                        <td colSpan={2} className="text-end">
+                        <td colSpan={3} className="text-end">
                           Subtotal
                         </td>
                         <td className="text-end">
@@ -313,7 +321,7 @@ const Page: NextPage = () => {
                       </tr>
                       {currentPost.result.orcamento.valorDescontoAplicado > 0 && (
                         <tr>
-                          <td colSpan={2} className="text-end">
+                          <td colSpan={3} className="text-end">
                             Desconto
                           </td>
                           <td className="text-end">
@@ -322,7 +330,7 @@ const Page: NextPage = () => {
                         </tr>
                       )}
                       <tr className="table-primary">
-                        <td colSpan={2} className="text-end">
+                        <td colSpan={3} className="text-end">
                           <strong>Total</strong>
                         </td>
                         <td className="text-end">
