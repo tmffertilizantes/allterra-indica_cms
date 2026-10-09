@@ -177,6 +177,8 @@ const Page: NextPage = () => {
       field: "password",
       label: "Senha",
       type: "password",
+      // v2: a edição não troca senha (PATCH /admin/users/:id só aceita o perfil); use "Gerar nova senha".
+      onlyOnInsert: isUserV2(),
       isValid: passwordIsValid,
       errorMessage: "A senha precisa ter no mínimo 8 caracteres",
       customEvents: (setUser: (arg0: (user: any) => any) => any) => ({
@@ -202,6 +204,8 @@ const Page: NextPage = () => {
       field: "confirm_password",
       label: "Confirmar Senha",
       type: "password",
+      // v2: a edição não troca senha (PATCH /admin/users/:id só aceita o perfil); use "Gerar nova senha".
+      onlyOnInsert: isUserV2(),
       isValid: confirmPasswordIsValid,
       errorMessage: "Senhas incompatíveis",
       customEvents: () => ({
