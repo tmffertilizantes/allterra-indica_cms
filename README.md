@@ -2,6 +2,7 @@
 
 ## Sessão com a identidade da v2 (Fase 1)
 
+
 Especificação: [`specs/016-fase1-identidade-v2`](../specs/016-fase1-identidade-v2/). Com `auth`/`user` em v2 para esta
 versão do CMS (`targets.cms` no `/client-config`, versão de `package.json`), o login, a sessão e as telas de usuários
 usam a v2. Implementação em `lib/session.ts` (interceptores instalados em `pages/_app.tsx`) e `lib/users.ts`.
@@ -15,4 +16,3 @@ usam a v2. Implementação em `lib/session.ts` (interceptores instalados em `pag
 
 O `Authorization` de cada requisição é reescrito pelo destino (v2 → access; v1 → ponte), e a sessão é renovada antes
 de vencer, uma vez por vez, inclusive entre abas (`navigator.locks`). Sessão recusada → `/login?expired=1`.
-
