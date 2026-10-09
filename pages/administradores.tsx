@@ -12,6 +12,21 @@ import EditButton from "@components/Utils/Buttons/EditButton";
 import RemoveButton from "@components/Utils/Buttons/RemoveButton";
 import StatusButton from "@components/Utils/Buttons/StatusButton";
 import { Form } from "react-bootstrap";
+import { AlertError, AlertItemCreated, AlertItemEdited, AlertItemRemoved } from "@components/Alerts/Alerts";
+import Swal from "sweetalert2";
+import {
+  createAdmin,
+  deleteUser,
+  fetchAllUsers,
+  fetchRoles,
+  isUserV2,
+  serverMessage,
+  setActive,
+  setApproval,
+  updateUser,
+} from "../lib/users";
+
+const ADMIN_ROLE_NAMES = ["admin", "super-admin"];
 
 interface CustomComponent {
   post: any;
@@ -30,19 +45,66 @@ const Page: NextPage = () => {
     boolean | undefined
   >();
 
-  const fetcherRoles = (url = "", token = "") =>
-    axios
-      .get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => res.data.roles);
+  // Papéis: v1 `GET /role`; v2 `GET /admin/roles` (specs/016 — FR-023).
+  const { data: roles } = useSWR(["roles", isUserV2(), token], () => fetchRoles());
 
-  const { data: roles } = useSWR(
-    [apiUrl(`/role`), token],
-    fetcherRoles
-  );
+  /** Administradores pelo NOME do papel (admin e super-admin — nível administrativo único). */
+  const isAdmin = (user: { roleId: number; role?: { name: string } }) => {
+    if (user.role?.name) return ADMIN_ROLE_NAMES.includes(user.role.name);
+    const adminIds = (roles ?? [])
+      .filter((role: { name: string }) => ADMIN_ROLE_NAMES.includes(role.name))
+      .map((role: { id: number }) => role.id);
+    return adminIds.length ? adminIds.includes(user.roleId) : user.roleId === 2 || user.roleId === 1;
+  };
+
+  /** Lista atual de administradores (v1 e v2), no formato que a tabela espera. */
+  const loadAdmins = async () => (await fetchAllUsers()).filter(isAdmin);
+
+  // Status de aprovação carregado, para só chamar approve/disapprove quando ele mudar.
+  const loadedStatus: Record<number, string | null> = {};
+
+  const v2Fetcher = async () => {
+    const admins = await loadAdmins();
+    admins.forEach((admin: any) => (loadedStatus[admin.id] = admin.status));
+    return admins;
+  };
+
+  const v2Insert = async (_insertUrl = "", _url = "", _options = {}, post: any = {}) => {
+    try {
+      await createAdmin(post);
+      AlertItemCreated();
+    } catch (error) {
+      Swal.fire({ icon: "error", title: "Erro", text: serverMessage(error, "Não foi possível criar o administrador") });
+    }
+    return v2Fetcher();
+  };
+
+  const v2Update = async (_updateUrl = "", _url = "", _options = {}, post: any = {}) => {
+    try {
+      // Botão de status da tabela: só { id, active }.
+      if (Object.keys(post).length === 2 && "active" in post) {
+        await setActive(post.id, post.active);
+      } else {
+        await updateUser(post.id, post);
+        const approved = post.status === "approved";
+        if (approved !== (loadedStatus[post.id] === "approved")) await setApproval(post.id, approved);
+      }
+      AlertItemEdited();
+    } catch (error) {
+      Swal.fire({ icon: "error", title: "Erro", text: serverMessage(error, "Não foi possível salvar") });
+    }
+    return v2Fetcher();
+  };
+
+  const v2Remove = async (removeUrl = "", _url = "", _options = {}) => {
+    try {
+      await deleteUser(Number(removeUrl.split("/").pop()));
+      AlertItemRemoved();
+    } catch (error) {
+      Swal.fire({ icon: "error", title: "Erro", text: serverMessage(error, "Não foi possível excluir") });
+    }
+    return v2Fetcher();
+  };
 
   const roles_as_options = useMemo(
     () =>
@@ -115,6 +177,8 @@ const Page: NextPage = () => {
       field: "password",
       label: "Senha",
       type: "password",
+      // v2: a edição não troca senha (PATCH /admin/users/:id só aceita o perfil); use "Gerar nova senha".
+      onlyOnInsert: isUserV2(),
       isValid: passwordIsValid,
       errorMessage: "A senha precisa ter no mínimo 8 caracteres",
       customEvents: (setUser: (arg0: (user: any) => any) => any) => ({
@@ -140,6 +204,8 @@ const Page: NextPage = () => {
       field: "confirm_password",
       label: "Confirmar Senha",
       type: "password",
+      // v2: a edição não troca senha (PATCH /admin/users/:id só aceita o perfil); use "Gerar nova senha".
+      onlyOnInsert: isUserV2(),
       isValid: confirmPasswordIsValid,
       errorMessage: "Senhas incompatíveis",
       customEvents: () => ({
@@ -220,10 +286,16 @@ const Page: NextPage = () => {
           token,
           insertUrlFn: (url = "", id = "") => `${register_url}/${id}`,
           fetcherDataFn: (response: AxiosResponse) =>
-            response.data.users.filter(
-              (user: { roleId: number }) =>
-                user.roleId === 2 || user.roleId === 1
-            ),
+            response.data.users.filter(isAdmin),
+          // v2 (specs/016): /admin/users* via lib/users.ts; o legado segue com as rotas antigas.
+          ...(isUserV2()
+            ? {
+                fetcherFn: () => v2Fetcher(),
+                insertFn: v2Insert,
+                updateFn: v2Update,
+                removeFn: v2Remove,
+              }
+            : {}),
         }}
         formConfig={{
           insertTitle: "Adicionar Administrador",

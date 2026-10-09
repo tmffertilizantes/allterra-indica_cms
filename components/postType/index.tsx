@@ -627,7 +627,9 @@ const ModalAddPost = ({
   onClose,
 }: ModalAddPost) => {
   const title = post.id ? editTitle : insertTitle;
-  const haveInvalidField = fields.find((field) => field.isValid === false);
+  // `onlyOnInsert`: campo só do cadastro (ex.: senha), escondido e ignorado na edição.
+  const visibleFields = fields.filter((field) => !(post.id && field.onlyOnInsert));
+  const haveInvalidField = visibleFields.find((field) => field.isValid === false);
 
   return (
     <Modal show={show} onHide={onClose} size="xl">
@@ -636,7 +638,7 @@ const ModalAddPost = ({
       </Modal.Header>
 
       <Modal.Body>
-        {fields.map(
+        {visibleFields.map(
           (
             {
               label,
@@ -645,6 +647,7 @@ const ModalAddPost = ({
               errorMessage,
               customEvents = () => ({}),
               Component = defaultFieldForm,
+              onlyOnInsert: _onlyOnInsert,
               ...props
             },
             index

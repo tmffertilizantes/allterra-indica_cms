@@ -3,11 +3,14 @@ import Logo from "@components/Logo";
 import axios from "axios";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/router";
+import { apiVersion } from "../lib/clientConfig";
 
 export default function EsqueciMinhaSenha() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showMessage, setShowMessage] = useState<boolean>(false);
+  const router = useRouter();
 
   async function submitEmail() {
     setIsSubmitting(true);
@@ -20,6 +23,11 @@ export default function EsqueciMinhaSenha() {
         }
       );
 
+      // v2 (specs/016): código de 6 dígitos por e-mail → tela de nova senha com o código.
+      if (apiVersion("auth") === "v2") {
+        router.push(`/editar-senha?email=${encodeURIComponent(email)}`);
+        return;
+      }
     } catch (error) {}
 
 		setShowMessage(true);

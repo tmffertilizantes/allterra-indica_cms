@@ -17,6 +17,8 @@ const nextConfig = {
     API_URL_V2: process.env.API_URL_V2 || '',
     CLIENT_CONFIG_DEFAULT: process.env.CLIENT_CONFIG_DEFAULT || '',
     APP_VERSION: process.env.npm_package_version,
+    // Enviada ao /client-config para receber os módulos do target `cms` (specs/016).
+    NEXT_PUBLIC_CMS_VERSION: require('./package.json').version,
   },
 };
 
