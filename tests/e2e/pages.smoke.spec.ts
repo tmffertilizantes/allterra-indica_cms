@@ -28,6 +28,8 @@ const ROUTES: { path: string; expect: RegExp | string }[] = [
   { path: "/termos", expect: /termo/i },
   { path: "/contato", expect: /contato/i },
   { path: "/personalizacao-resultados", expect: /personaliza|resultado|se[cç][aã]o/i },
+  // spec 017: lista (módulo ligado) ou "Funcionalidade indisponível" (desligado); o título aparece nos dois.
+  { path: "/posicao-microgeo", expect: /posi[cç][aã]o microgeo/i },
   { path: "/editar-senha", expect: /senha/i },
 ];
 
