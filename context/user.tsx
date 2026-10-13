@@ -3,6 +3,7 @@ import axios from "axios";
 import { Cidade } from "models/cidade";
 import router from "next/router";
 import { destroyCookie, parseCookies } from "nookies";
+import { clearSessionCookies, isV2Session } from "../lib/session";
 
 const cookies = parseCookies();
 
@@ -30,9 +31,20 @@ export function getUserToken() {
   return "";
 }
 
-export function logout() {
-  destroyCookie(null, 'USER_TOKEN', { path: '/' })
-  destroyCookie(null, 'user', { path: '/' })
+/** Logout: na v2 revoga a sessão no servidor (best effort) antes de apagar os cookies. */
+export async function logout() {
+  if (isV2Session()) {
+    try {
+      // `_retried`: sem tentar renovar se a sessão já tiver sido recusada.
+      await axios.post(apiUrl(`/auth/logout`), undefined, { timeout: 3000, _retried: true } as any);
+    } catch {
+      // Sessão já inválida ou sem rede: os cookies são apagados mesmo assim.
+    }
+    clearSessionCookies();
+  } else {
+    destroyCookie(null, 'USER_TOKEN', { path: '/' })
+    destroyCookie(null, 'user', { path: '/' })
+  }
   router.push("/login");
 }
 

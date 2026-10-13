@@ -6,6 +6,8 @@ import { parseCookies, setCookie, destroyCookie } from "nookies";
 import { userIsLogged } from "@context/user";
 
 import Logo from "@components/Logo";
+import { apiVersion } from "../lib/clientConfig";
+import { applySession, getDeviceId } from "../lib/session";
 import { useGlobal } from "@context/global";
 import Link from "next/link";
 
@@ -70,8 +72,38 @@ export default function Login() {
     }
   }
 
+  /** Login na v2 (specs/016): o servidor só aceita quem tem permissão administrativa. */
+  async function signInV2() {
+    try {
+      const response = await axios.post(apiUrl(`/auth/login`), {
+        email: login.email,
+        password: login.password,
+        client: "cms",
+        deviceId: getDeviceId(),
+      });
+      applySession(response.data);
+      router.push("/analises");
+    } catch (error: any) {
+      const status = error?.response?.status;
+      setErrorMessage(
+        status === 403
+          ? error?.response?.data?.message ?? "Acesso negado"
+          : status === 429
+            ? "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+            : "Login incorreto"
+      );
+      setShowErrorMessage(true);
+    }
+  }
+
   async function signIn() {
     setIsSubmitting(true);
+
+    if (apiVersion("auth") === "v2") {
+      await signInV2();
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await axios.post(apiUrl(`/auth/login`), {
@@ -156,6 +188,12 @@ export default function Login() {
                 {showErrorMessage && (
                   <div className="mb-3 text-center">
                     <span className="text-danger">{errorMessage}</span>
+                  </div>
+                )}
+
+                {!showErrorMessage && router.query.expired && (
+                  <div className="mb-3 text-center">
+                    <span className="text-warning">Sua sessão terminou. Entre novamente.</span>
                   </div>
                 )}
 

@@ -7,6 +7,7 @@ import {
   DEFAULT_CLIENT_CONFIG,
   __setClientConfigForTests,
   apiVersion,
+  isFeatureEnabled,
   parseClientConfig,
   resolveBaseUrl,
   resolveModule,
@@ -103,4 +104,34 @@ test("valor embutido (CLIENT_CONFIG_DEFAULT) vale sem configuração remota; inv
   process.env.CLIENT_CONFIG_DEFAULT = '{"default":"v9"}';
   expect(apiUrl("/region")).toBe(`${V1}/region`);
   expect(parseClientConfig({ ...DEFAULT_CLIENT_CONFIG })).toEqual(DEFAULT_CLIENT_CONFIG);
+});
+
+test.describe("módulo nativo da v2: Posição Microgeo (specs/017)", () => {
+  const identity = { auth: "v2", user: "v2", preferences: "v2" } as const;
+
+  test("alias: microgeo-position → microgeoPosition", () => {
+    expect(resolveModule("/microgeo-position?take=100")).toBe("microgeoPosition");
+  });
+
+  test("sem a chave → desligado e na base v1", () => {
+    __setClientConfigForTests({ default: "v1", modules: { ...identity }, minAppVersion: "0.0.0" });
+    expect(isFeatureEnabled("microgeoPosition")).toBe(false);
+    expect(resolveBaseUrl("/microgeo-position")).toBe(V1);
+  });
+
+  test("com a chave e auth em v1 → desligado", () => {
+    __setClientConfigForTests({ default: "v1", modules: { microgeoPosition: "v2" }, minAppVersion: "0.0.0" });
+    expect(apiVersion("microgeoPosition")).toBe("v1");
+    expect(isFeatureEnabled("microgeoPosition")).toBe(false);
+  });
+
+  test("com a chave e auth em v2 → ligado e na base v2", () => {
+    __setClientConfigForTests({
+      default: "v1",
+      modules: { ...identity, microgeoPosition: "v2" },
+      minAppVersion: "0.0.0",
+    });
+    expect(isFeatureEnabled("microgeoPosition")).toBe(true);
+    expect(apiUrl("/microgeo-position?take=100&skip=0")).toBe(`${V2}/microgeo-position?take=100&skip=0`);
+  });
 });
