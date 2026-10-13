@@ -1,10 +1,16 @@
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import Logo from "@components/Logo";
 import NavLinkCollapse from "@components/Navbar/NavLinkCollapse";
 import { logout } from "@context/user";
+import { isFeatureEnabled } from "../../lib/clientConfig";
 
 export default function NavBar() {
+  // Posição Microgeo (specs/017): módulo nativo da v2, lido da configuração no cliente.
+  const [microgeoEnabled, setMicrogeoEnabled] = useState(false);
+  useEffect(() => setMicrogeoEnabled(isFeatureEnabled("microgeoPosition")), []);
+
   return (
     <nav className="navbar-vertical navbar">
       <div className="nav-scroller">
@@ -39,6 +45,14 @@ export default function NavBar() {
               construção de perfil de solo
             </a>
           </li>
+
+          {microgeoEnabled && (
+            <li className="nav-item">
+              <a className="nav-link" href="/posicao-microgeo">
+                <i className="nav-icon fe fe-target me-2"></i>Posição Microgeo
+              </a>
+            </li>
+          )}
 
           <li className="nav-item">
             <NavLinkCollapse
