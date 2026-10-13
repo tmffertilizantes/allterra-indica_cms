@@ -109,9 +109,20 @@ export function apiBases(): Record<ApiVersion, string | undefined> {
 
 /**
  * Rotas da v2 cujo 1º segmento não é módulo do legado (specs/016, research R3): `users/me` e
- * `admin/*` pertencem ao módulo `user` e ligam junto com ele.
+ * `admin/*` pertencem ao módulo `user` e ligam junto com ele. `microgeo-position/*` é o módulo
+ * nativo da v2 `microgeoPosition` (specs/017).
  */
-const MODULE_ALIASES: Record<string, string> = { users: "user", admin: "user" };
+const MODULE_ALIASES: Record<string, string> = {
+  users: "user",
+  admin: "user",
+  "microgeo-position": "microgeoPosition",
+};
+
+/** Módulos que dependem da sessão v2: sem `auth` em v2, são tratados como v1 (desligados). */
+const REQUIRES_V2_AUTH = new Set(["user", "preferences", "microgeoPosition"]);
+
+/** Funcionalidades que só existem na v2 (specs/017). */
+export type V2Feature = "microgeoPosition";
 
 /** Primeiro segmento do caminho = nome do módulo legado (com aliases). URL absoluta → `null`. */
 export function resolveModule(path: string): string | null {
@@ -125,11 +136,17 @@ export function resolveModule(path: string): string | null {
 export function apiVersion(moduleName: string): ApiVersion {
   const config = getActiveClientConfig();
   const version = config.modules[moduleName] ?? config.default;
-  // A v2 nunca aceita token legado: sem `auth` em v2, user/preferences ficam na v1 (R2).
-  if ((moduleName === "user" || moduleName === "preferences") && version === "v2") {
+  // A v2 nunca aceita token legado: sem `auth` em v2, user/preferences (e os módulos nativos da
+  // v2) ficam na v1 (R2).
+  if (REQUIRES_V2_AUTH.has(moduleName) && version === "v2") {
     return (config.modules.auth ?? config.default) === "v2" ? "v2" : "v1";
   }
   return version;
+}
+
+/** Funcionalidade nativa da v2 ligada pela configuração (contracts/client-config-v2-modules.md da 017). */
+export function isFeatureEnabled(feature: V2Feature): boolean {
+  return apiVersion(feature) === "v2";
 }
 
 /** Versão do CMS enviada ao /client-config (`targets.cms.minVersion` — research R1 da 016). */
