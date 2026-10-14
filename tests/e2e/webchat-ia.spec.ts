@@ -35,7 +35,17 @@ async function enableWebchatModule(page: Page) {
   });
 }
 
+/** Sessão simulada: o layout manda ao login quando /auth/me falha (independe da API legada). */
+async function mockSession(page: Page) {
+  await page.route("**/auth/me", (route: Route) =>
+    route.fulfill({
+      json: { success: true, user: { id: 1, name: "QA", email: "qa@tmf.test", roleId: 1 } },
+    })
+  );
+}
+
 async function mockApi(page: Page, puts: unknown[]) {
+  await mockSession(page);
   await page.route("**/webchat/settings/admin", (route: Route) =>
     route.fulfill({ json: { success: true, settings: initial } })
   );
@@ -93,6 +103,7 @@ test.describe("webchat-ia", () => {
   });
 
   test("sem o módulo webchat: funcionalidade indisponível", async ({ page }) => {
+    await mockSession(page);
     await page.goto("/webchat-ia", { waitUntil: "networkidle" });
     await expect(page.getByText("Funcionalidade indisponível.")).toBeVisible();
   });

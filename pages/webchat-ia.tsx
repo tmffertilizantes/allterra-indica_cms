@@ -24,11 +24,16 @@ type AdminSettings = {
 type LoadState = "loading" | "ready" | "forbidden" | "error";
 
 const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  new Date(value).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 
-const statusOf = (error: unknown) => (error as { response?: { status?: number } })?.response?.status;
+const statusOf = (error: unknown) =>
+  (error as { response?: { status?: number } })?.response?.status;
 const messageOf = (error: unknown) =>
-  (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+  (error as { response?: { data?: { message?: string } } })?.response?.data
+    ?.message;
 
 export default function WebchatIa() {
   const [featureEnabled, setFeatureEnabled] = useState<boolean | null>(null);
@@ -56,7 +61,9 @@ export default function WebchatIa() {
         apply(res.data.settings);
         setState("ready");
       })
-      .catch((error) => setState(statusOf(error) === 403 ? "forbidden" : "error"));
+      .catch((error) =>
+        setState(statusOf(error) === 403 ? "forbidden" : "error"),
+      );
   }, [featureEnabled]);
 
   const urlInvalid = !isValidWebchatUrl(url);
@@ -66,7 +73,10 @@ export default function WebchatIa() {
     if (urlInvalid) return;
     setIsSaving(true);
     try {
-      const res = await api.put("/webchat/settings", { enabled, url: url.trim() });
+      const res = await api.put("/webchat/settings", {
+        enabled,
+        url: url.trim(),
+      });
       apply(res.data.settings);
       AlertItemEdited();
     } catch (error) {
@@ -82,7 +92,9 @@ export default function WebchatIa() {
         <div className="container-fluid p-4">
           <h1 className="mb-4">Webchat IA</h1>
           <div className="alert alert-secondary">
-            {featureEnabled === false ? "Funcionalidade indisponível." : "Acesso negado."}
+            {featureEnabled === false
+              ? "Funcionalidade indisponível."
+              : "Acesso negado."}
           </div>
         </div>
       </LayoutDefault>
@@ -93,79 +105,96 @@ export default function WebchatIa() {
     <LayoutDefault>
       <div className="container-fluid p-4">
         <h1>Webchat IA</h1>
-        <p className="text-muted mb-0">
-          Assistente de IA exibido no aplicativo (ícone flutuante e item do menu lateral).
-        </p>
         <hr />
 
-        {state === "loading" && <Spinner animation="border" variant="primary" />}
+        {state === "loading" && (
+          <Spinner animation="border" variant="primary" />
+        )}
         {state === "error" && (
-          <div className="alert alert-danger">Não foi possível carregar a configuração.</div>
+          <div className="alert alert-danger">
+            Não foi possível carregar a configuração.
+          </div>
         )}
 
         {state === "ready" && settings && (
-          <Form
-            noValidate
-            onSubmit={(event) => {
-              event.preventDefault();
-              save();
-            }}
-          >
-            <Form.Group className="mb-4" controlId="webchat-enabled">
-              <Form.Check
-                type="switch"
-                label={enabled ? "Habilitado" : "Desabilitado"}
-                checked={enabled}
-                onChange={(event) => setEnabled(event.target.checked)}
-              />
-              <Form.Text muted>
-                Desabilitado, o ícone e o item do menu lateral deixam de aparecer no aplicativo.
-              </Form.Text>
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="webchat-url">
-              <Form.Label>URL do webchat</Form.Label>
-              <Form.Control
-                type="url"
-                value={url}
-                maxLength={WEBCHAT_URL_MAX_LENGTH}
-                isInvalid={touched && urlInvalid}
-                onChange={(event) => {
-                  setUrl(event.target.value);
-                  setTouched(true);
+          <div className="card shadow">
+            <div className="card-body">
+              <p className="mb-4">
+                Assistente de IA exibido no aplicativo (ícone flutuante e item
+                do menu lateral).
+              </p>
+              <Form
+                noValidate
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  save();
                 }}
-              />
-              <Form.Control.Feedback type="invalid">
-                Informe uma URL https válida.
-              </Form.Control.Feedback>
-              <div className="mt-2">
-                <button
-                  type="button"
-                  className="btn btn-link p-0"
-                  disabled={url.trim() === settings.defaultUrl}
-                  onClick={() => {
-                    setUrl(settings.defaultUrl);
-                    setTouched(true);
-                  }}
+              >
+                <Form.Group className="mb-4" controlId="webchat-enabled">
+                  <Form.Check
+                    type="switch"
+                    label={enabled ? "Habilitado" : "Desabilitado"}
+                    checked={enabled}
+                    onChange={(event) => setEnabled(event.target.checked)}
+                  />
+                  <Form.Text muted>
+                    Desabilitado, o ícone e o item do menu lateral deixam de
+                    aparecer no aplicativo.
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-3" controlId="webchat-url">
+                  <Form.Label>URL do webchat</Form.Label>
+                  <Form.Control
+                    type="url"
+                    value={url}
+                    maxLength={WEBCHAT_URL_MAX_LENGTH}
+                    isInvalid={touched && urlInvalid}
+                    onChange={(event) => {
+                      setUrl(event.target.value);
+                      setTouched(true);
+                    }}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Informe uma URL https válida.
+                  </Form.Control.Feedback>
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm"
+                      disabled={url.trim() === settings.defaultUrl}
+                      onClick={() => {
+                        setUrl(settings.defaultUrl);
+                        setTouched(true);
+                      }}
+                    >
+                      Restaurar URL padrão
+                    </button>
+                  </div>
+                </Form.Group>
+
+                <p
+                  className="text-muted small"
+                  data-testid="webchat-last-update"
                 >
-                  Restaurar URL padrão
-                </button>
-              </div>
-            </Form.Group>
+                  Última alteração:{" "}
+                  {settings.updatedAt
+                    ? `${settings.updatedByName ?? "—"} em ${formatDateTime(settings.updatedAt)}`
+                    : "—"}
+                </p>
 
-            <p className="text-muted small" data-testid="webchat-last-update">
-              Última alteração:{" "}
-              {settings.updatedAt
-                ? `${settings.updatedByName ?? "—"} em ${formatDateTime(settings.updatedAt)}`
-                : "—"}
-            </p>
-
-            <div className="text-end">
-              <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                {isSaving ? "Salvando..." : "Salvar"}
-              </button>
+                <div className="text-end">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Salvando..." : "Salvar"}
+                  </button>
+                </div>
+              </Form>
             </div>
-          </Form>
+          </div>
         )}
       </div>
     </LayoutDefault>
