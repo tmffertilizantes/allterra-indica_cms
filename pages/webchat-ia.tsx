@@ -1,6 +1,11 @@
 import { api } from "../lib/api";
 import { isFeatureEnabled } from "../lib/clientConfig";
-import { isValidWebchatUrl, WEBCHAT_URL_MAX_LENGTH } from "../lib/webchat";
+import {
+  DEFAULT_WEBCHAT_TITLE,
+  isValidWebchatUrl,
+  WEBCHAT_TITLE_MAX_LENGTH,
+  WEBCHAT_URL_MAX_LENGTH,
+} from "../lib/webchat";
 import LayoutDefault from "@components/Layouts/default";
 import { AlertError, AlertItemEdited } from "@components/Alerts/Alerts";
 import { useEffect, useState } from "react";
@@ -8,13 +13,16 @@ import { Form, Spinner } from "react-bootstrap";
 
 /**
  * Configurações → Webchat IA (specs/018-webchat-ia, US2; research R14). Habilita ou desabilita o
- * assistente no app e troca a URL do webchat, sem deploy. Módulo nativo da v2: só aparece com
+ * assistente no app, troca a URL do webchat e o título do painel, sem deploy. Módulo nativo da v2: só aparece com
  * `webchat` ligado no /client-config; a v2 exige `ver|atualizar webchat` (admin e super-admin).
  */
 
 type AdminSettings = {
   enabled: boolean;
   url: string;
+  /** Ausente em uma v2 anterior ao título configurável: o campo não é exibido nem enviado. */
+  title?: string;
+  defaultTitle?: string;
   isDefaultUrl: boolean;
   defaultUrl: string;
   updatedAt: string | null;
@@ -41,6 +49,8 @@ export default function WebchatIa() {
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [enabled, setEnabled] = useState(true);
   const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [hideTitle, setHideTitle] = useState(false);
   const [touched, setTouched] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -50,6 +60,8 @@ export default function WebchatIa() {
     setSettings(value);
     setEnabled(value.enabled);
     setUrl(value.url);
+    setTitle(value.title ?? "");
+    setHideTitle(value.title === "");
     setTouched(false);
   };
 
@@ -67,6 +79,8 @@ export default function WebchatIa() {
   }, [featureEnabled]);
 
   const urlInvalid = !isValidWebchatUrl(url);
+  const titleSupported = typeof settings?.title === "string";
+  const defaultTitle = settings?.defaultTitle ?? DEFAULT_WEBCHAT_TITLE;
 
   async function save() {
     setTouched(true);
@@ -76,6 +90,7 @@ export default function WebchatIa() {
       const res = await api.put("/webchat/settings", {
         enabled,
         url: url.trim(),
+        ...(titleSupported ? { title: hideTitle ? "" : title.trim() } : {}),
       });
       apply(res.data.settings);
       AlertItemEdited();
@@ -172,6 +187,37 @@ export default function WebchatIa() {
                     </button>
                   </div>
                 </Form.Group>
+
+                {titleSupported && (
+                  <Form.Group className="mb-4" controlId="webchat-title">
+                    <Form.Label>Título do assistente</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={hideTitle ? "" : title}
+                      maxLength={WEBCHAT_TITLE_MAX_LENGTH}
+                      placeholder={hideTitle ? "Sem título" : defaultTitle}
+                      disabled={hideTitle}
+                      onChange={(event) => setTitle(event.target.value)}
+                    />
+                    <Form.Text muted>
+                      Exibido no topo do chat, no aplicativo. Em branco, o chat
+                      fica sem título.
+                    </Form.Text>
+                    <Form.Check
+                      className="mt-2"
+                      type="checkbox"
+                      id="webchat-hide-title"
+                      label="Não exibir título"
+                      checked={hideTitle}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        setHideTitle(checked);
+                        // Marcar limpa o campo; desmarcar com o campo vazio volta ao padrão.
+                        setTitle(checked ? "" : title || defaultTitle);
+                      }}
+                    />
+                  </Form.Group>
+                )}
 
                 <p
                   className="text-muted small"

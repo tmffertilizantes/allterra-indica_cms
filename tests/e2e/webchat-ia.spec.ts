@@ -11,6 +11,8 @@ const DEFAULT_URL =
 const initial = {
   enabled: true,
   url: "https://exemplo.com/chat",
+  title: "Assistente IA",
+  defaultTitle: "Assistente IA",
   isDefaultUrl: false,
   defaultUrl: DEFAULT_URL,
   updatedAt: "2026-10-14T13:05:00.000Z",
@@ -44,10 +46,10 @@ async function mockSession(page: Page) {
   );
 }
 
-async function mockApi(page: Page, puts: unknown[]) {
+async function mockApi(page: Page, puts: unknown[], settings: Record<string, unknown> = initial) {
   await mockSession(page);
   await page.route("**/webchat/settings/admin", (route: Route) =>
-    route.fulfill({ json: { success: true, settings: initial } })
+    route.fulfill({ json: { success: true, settings } })
   );
   await page.route("**/webchat/settings", async (route: Route) => {
     if (route.request().method() !== "PUT") return route.fallback();
@@ -98,8 +100,52 @@ test.describe("webchat-ia", () => {
     await toggle.uncheck();
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect.poll(() => puts.length).toBe(1);
-    expect(puts[0]).toEqual({ enabled: false, url: DEFAULT_URL });
+    expect(puts[0]).toEqual({ enabled: false, url: DEFAULT_URL, title: "Assistente IA" });
     await expect(page.getByTestId("webchat-last-update")).toContainText("QA");
+  });
+
+  test("título personalizado e \"Não exibir título\" (limpa e bloqueia o campo)", async ({ page }) => {
+    const puts: any[] = [];
+    await enableWebchatModule(page);
+    await mockApi(page, puts);
+    await page.goto("/webchat-ia", { waitUntil: "networkidle" });
+
+    const title = page.locator("#webchat-title");
+    const hide = page.locator("#webchat-hide-title");
+    await expect(title).toHaveValue("Assistente IA");
+    await expect(hide).not.toBeChecked();
+
+    await title.fill("  Agro IA ");
+    await page.getByRole("button", { name: "Salvar" }).click();
+    await expect.poll(() => puts.length).toBe(1);
+    expect(puts[0].title).toBe("Agro IA");
+
+    await hide.check();
+    await expect(title).toHaveValue("");
+    await expect(title).toBeDisabled();
+    await page.getByRole("button", { name: "Salvar" }).click();
+    await expect.poll(() => puts.length).toBe(2);
+    expect(puts[1].title).toBe("");
+
+    // Resposta com título vazio: a caixa volta marcada.
+    await expect(hide).toBeChecked();
+    // Desmarcar com o campo vazio volta ao título padrão.
+    await hide.uncheck();
+    await expect(title).toHaveValue("Assistente IA");
+    await expect(title).toBeEnabled();
+  });
+
+  test("v2 sem título configurável: campo oculto e PUT sem title", async ({ page }) => {
+    const puts: any[] = [];
+    const { title: _t, defaultTitle: _d, ...legacy } = initial;
+    await enableWebchatModule(page);
+    await mockApi(page, puts, legacy);
+    await page.goto("/webchat-ia", { waitUntil: "networkidle" });
+    await expect(page.locator("#webchat-url")).toHaveValue(initial.url);
+    await expect(page.locator("#webchat-title")).toHaveCount(0);
+    await page.getByRole("button", { name: "Salvar" }).click();
+    await expect.poll(() => puts.length).toBe(1);
+    expect(puts[0]).toEqual({ enabled: true, url: initial.url });
   });
 
   test("sem o módulo webchat: funcionalidade indisponível", async ({ page }) => {
