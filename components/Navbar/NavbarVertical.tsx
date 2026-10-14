@@ -10,6 +10,9 @@ export default function NavBar() {
   // Posição Microgeo (specs/017): módulo nativo da v2, lido da configuração no cliente.
   const [microgeoEnabled, setMicrogeoEnabled] = useState(false);
   useEffect(() => setMicrogeoEnabled(isFeatureEnabled("microgeoPosition")), []);
+  // Webchat IA (specs/018): módulo nativo da v2, lido da configuração no cliente.
+  const [webchatEnabled, setWebchatEnabled] = useState(false);
+  useEffect(() => setWebchatEnabled(isFeatureEnabled("webchat")), []);
 
   return (
     <nav className="navbar-vertical navbar">
@@ -235,6 +238,14 @@ export default function NavBar() {
                     <a className="nav-link">Personalização de Resultados</a>
                   </Link>
                 </li>
+
+                {webchatEnabled && (
+                  <li className="nav-item">
+                    <Link href="/webchat-ia">
+                      <a className="nav-link">Webchat IA</a>
+                    </Link>
+                  </li>
+                )}
               </ul>
             </NavLinkCollapse>
           </li>
