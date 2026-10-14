@@ -119,10 +119,10 @@ const MODULE_ALIASES: Record<string, string> = {
 };
 
 /** Módulos que dependem da sessão v2: sem `auth` em v2, são tratados como v1 (desligados). */
-const REQUIRES_V2_AUTH = new Set(["user", "preferences", "microgeoPosition"]);
+const REQUIRES_V2_AUTH = new Set(["user", "preferences", "microgeoPosition", "webchat"]);
 
-/** Funcionalidades que só existem na v2 (specs/017). */
-export type V2Feature = "microgeoPosition";
+/** Funcionalidades que só existem na v2 (specs/017, specs/018). */
+export type V2Feature = "microgeoPosition" | "webchat";
 
 /** Primeiro segmento do caminho = nome do módulo legado (com aliases). URL absoluta → `null`. */
 export function resolveModule(path: string): string | null {
