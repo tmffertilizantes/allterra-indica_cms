@@ -110,19 +110,27 @@ export function apiBases(): Record<ApiVersion, string | undefined> {
 /**
  * Rotas da v2 cujo 1º segmento não é módulo do legado (specs/016, research R3): `users/me` e
  * `admin/*` pertencem ao módulo `user` e ligam junto com ele. `microgeo-position/*` é o módulo
- * nativo da v2 `microgeoPosition` (specs/017).
+ * nativo da v2 `microgeoPosition` (specs/017); `ai-analysis/*`, o módulo `aiAnalysis` (specs/019).
  */
 const MODULE_ALIASES: Record<string, string> = {
   users: "user",
   admin: "user",
   "microgeo-position": "microgeoPosition",
+  "ai-analysis": "aiAnalysis",
 };
 
 /** Módulos que dependem da sessão v2: sem `auth` em v2, são tratados como v1 (desligados). */
-const REQUIRES_V2_AUTH = new Set(["user", "preferences", "microgeoPosition", "webchat"]);
+const REQUIRES_V2_AUTH = new Set([
+  "user",
+  "preferences",
+  "microgeoPosition",
+  "webchat",
+  "aiAnalysis",
+  "resultSectionOrder",
+]);
 
-/** Funcionalidades que só existem na v2 (specs/017, specs/018). */
-export type V2Feature = "microgeoPosition" | "webchat";
+/** Funcionalidades que só existem na v2 (specs/017, specs/018, specs/019). */
+export type V2Feature = "microgeoPosition" | "webchat" | "aiAnalysis";
 
 /** Primeiro segmento do caminho = nome do módulo legado (com aliases). URL absoluta → `null`. */
 export function resolveModule(path: string): string | null {

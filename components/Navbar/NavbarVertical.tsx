@@ -13,6 +13,8 @@ export default function NavBar() {
   // Webchat IA (specs/018): módulo nativo da v2, lido da configuração no cliente.
   const [webchatEnabled, setWebchatEnabled] = useState(false);
   useEffect(() => setWebchatEnabled(isFeatureEnabled("webchat")), []);
+  const [aiAnalysisEnabled, setAiAnalysisEnabled] = useState(false);
+  useEffect(() => setAiAnalysisEnabled(isFeatureEnabled("aiAnalysis")), []);
 
   return (
     <nav className="navbar-vertical navbar">
@@ -34,7 +36,8 @@ export default function NavBar() {
 
           <li className="nav-item">
             <a className="nav-link" href="/nutricao-de-plantas">
-              <i className="nav-icon fe fe-droplet me-2"></i>Manutenção e nutrição de plantas
+              <i className="nav-icon fe fe-droplet me-2"></i>Manutenção e
+              nutrição de plantas
             </a>
           </li>
 
@@ -44,8 +47,7 @@ export default function NavBar() {
               href="/construcao-e-manutencao-de-perfil-de-solo"
             >
               <i className="nav-icon fe fe-layers me-2"></i>
-              Fertilidade e
-              construção de perfil de solo
+              Fertilidade e construção de perfil de solo
             </a>
           </li>
 
@@ -91,7 +93,7 @@ export default function NavBar() {
             </NavLinkCollapse>
           </li>
 
-           <li className="nav-item">
+          <li className="nav-item">
             <Link href="/produtos">
               <a className="nav-link">
                 <i className="nav-icon fe fe-book me-2"></i>Produtos
@@ -132,7 +134,8 @@ export default function NavBar() {
           <li className="nav-item">
             <Link href="/precos-microgeo">
               <a className="nav-link">
-                <i className="nav-icon fe fe-dollar-sign me-2"></i>Produtos Microgeo
+                <i className="nav-icon fe fe-dollar-sign me-2"></i>Produtos
+                Microgeo
               </a>
             </Link>
           </li>
@@ -209,8 +212,8 @@ export default function NavBar() {
 
           <li className="nav-item">
             <a className="nav-link" href="/custo-tmf-calcario">
-              <i className="nav-icon fe fe-dollar-sign me-2"></i>Investimento TMF x
-              Concorrente
+              <i className="nav-icon fe fe-dollar-sign me-2"></i>Investimento
+              TMF x Concorrente
             </a>
           </li>
 
@@ -243,6 +246,14 @@ export default function NavBar() {
                   <li className="nav-item">
                     <Link href="/webchat-ia">
                       <a className="nav-link">Webchat IA</a>
+                    </Link>
+                  </li>
+                )}
+
+                {aiAnalysisEnabled && (
+                  <li className="nav-item">
+                    <Link href="/analise-ia">
+                      <a className="nav-link">Análise IA</a>
                     </Link>
                   </li>
                 )}
