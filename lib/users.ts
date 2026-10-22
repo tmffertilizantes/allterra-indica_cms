@@ -1,6 +1,7 @@
 import axios from "axios";
 import { apiUrl } from "./api";
 import { apiVersion } from "./clientConfig";
+import { fetchAllPages } from "./pagination";
 
 /**
  * Ações sobre usuários no CMS com a mesma assinatura nas duas versões
@@ -8,8 +9,6 @@ import { apiVersion } from "./clientConfig";
  * endpoints administrativos da v2 (/admin/users*), que só aceitam sessão do CMS + permissão.
  * O Authorization é escolhido pelos interceptores de lib/session.ts.
  */
-
-const PAGE_SIZE = 100;
 
 export const isUserV2 = () => apiVersion("user") === "v2";
 
@@ -19,18 +18,7 @@ export async function fetchAllUsers(): Promise<any[]> {
     const response = await axios.get(apiUrl(`/user`));
     return response.data.users ?? [];
   }
-  const items: any[] = [];
-  let skip = 0;
-  for (;;) {
-    const response = await axios.get(apiUrl(`/admin/users`), {
-      params: { skip, take: PAGE_SIZE },
-    });
-    const page = response.data;
-    items.push(...(page.items ?? []));
-    skip += PAGE_SIZE;
-    if (skip >= (page.total ?? 0) || !(page.items ?? []).length) break;
-  }
-  return items;
+  return fetchAllPages(`/admin/users`);
 }
 
 export interface UserFields {

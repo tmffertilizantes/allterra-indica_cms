@@ -119,6 +119,13 @@ const MODULE_ALIASES: Record<string, string> = {
   "ai-analysis": "aiAnalysis",
 };
 
+/**
+ * Nível de contrato deste build, enviado a `/client-config` (specs/020 research R1). 2 = Fase 2
+ * (`core`, `producer`, `product`, `consultant` com o contrato novo); 3 = Fase 4 (specs/022: `analysis`, `bemSizing`,
+ * catálogos e `upload`); 4 = Fase 5 (specs/023: categorias, regiões, revendas, materiais, termos, contato).
+ */
+export const CLIENT_CONTRACT = 4;
+
 /** Módulos que dependem da sessão v2: sem `auth` em v2, são tratados como v1 (desligados). */
 const REQUIRES_V2_AUTH = new Set([
   "user",
@@ -127,6 +134,26 @@ const REQUIRES_V2_AUTH = new Set([
   "webchat",
   "aiAnalysis",
   "resultSectionOrder",
+  "core",
+  "producer",
+  "product",
+  "consultant",
+  // Fase 4 (specs/022 research R1)
+  "analysis",
+  "bemSizing",
+  "microgeoPrice",
+  "bioStation",
+  "culture",
+  "nutrient",
+  "upload",
+  // Fase 5 (specs/023 contracts/consumers.md §2). `state` não entra: leitura pública.
+  "category",
+  "region",
+  "resale",
+  "material",
+  "materialCategory",
+  "contact",
+  "terms",
 ]);
 
 /** Funcionalidades que só existem na v2 (specs/017, specs/018, specs/019). */
@@ -192,7 +219,7 @@ export async function loadClientConfig(): Promise<void> {
   try {
     const response = await clientConfigHttp.get("/client-config", {
       baseURL,
-      params: { client: "cms", version: cmsVersion() },
+      params: { client: "cms", version: cmsVersion(), contract: CLIENT_CONTRACT },
       headers: current?.etag ? { "If-None-Match": current.etag } : undefined,
     });
 

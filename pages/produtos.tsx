@@ -1,4 +1,13 @@
 import { apiUrl } from "../lib/api";
+import { fetchAllCatalog } from "../lib/catalogs";
+import {
+  createProduct,
+  fetchAllProducts,
+  productErrorMessage,
+  saveProduct,
+} from "../lib/products";
+import { AlertItemCreated, AlertItemEdited } from "@components/Alerts/Alerts";
+import Swal from "sweetalert2";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { DateColumnFilter, NoFilter } from "@components/Table";
@@ -18,14 +27,8 @@ interface CustomComponent {
   setPost: Function;
 }
 
-const fetcherCategories = (url = "", token = "") =>
-  axios
-    .get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    .then((res) => res.data.categorys);
+// v1 ou v2 conforme o módulo `category` (specs/023).
+const fetcherCategories = () => fetchAllCatalog("category");
 
 export default function Produtos() {
   const { token = "" } = useGlobal();
@@ -565,28 +568,44 @@ const handleFileB64 = (event: React.ChangeEvent<HTMLInputElement>, setPost: any)
         dataConfig={{
           url,
           token,
+          // v1/v2 por lib/products.ts (specs/020): na v2 só os campos do DTO vão no corpo.
           updateFn: async (
-            updateUrl = "",
-            url = "",
-            options = {},
-            post = { category: {} },
+            _updateUrl = "",
+            _url = "",
+            _options = {},
+            post: any = { category: {} },
             fetcherDataFn = (result: any) => {}
           ) => {
-            // @ts-expect-error
-            delete post.category;
-
-            await axios.patch(updateUrl, post, options);
-            const result = await axios.get(url, options);
-
-            return fetcherDataFn(result);
+            const { category: _category, ...fields } = post;
+            try {
+              await saveProduct(fields);
+              AlertItemEdited();
+            } catch (error) {
+              Swal.fire({ icon: "error", title: "Erro", text: productErrorMessage(error) });
+            }
+            const products = await fetchAllProducts();
+            return fetcherDataFn({ data: { products } } as AxiosResponse);
           },
-          fetcherFn: (fetcherDataFn = () => {}, url = "", options = {}) =>
-            axios
-              .get(
-                apiUrl(`/product?includes=category,analysis`),
-                options
-              )
-              .then(fetcherDataFn),
+          insertFn: async (
+            _insertUrl = "",
+            _url = "",
+            _options = {},
+            post: any = {},
+            fetcherDataFn = (result: any) => {}
+          ) => {
+            try {
+              await createProduct(post);
+              AlertItemCreated();
+            } catch (error) {
+              Swal.fire({ icon: "error", title: "Erro", text: productErrorMessage(error) });
+            }
+            const products = await fetchAllProducts();
+            return fetcherDataFn({ data: { products } } as AxiosResponse);
+          },
+          fetcherFn: (fetcherDataFn = (_: any) => {}) =>
+            fetchAllProducts().then((products) =>
+              fetcherDataFn({ data: { products } } as AxiosResponse)
+            ),
           fetcherDataFn: (response: AxiosResponse) => {
             const products = response.data.products;
 

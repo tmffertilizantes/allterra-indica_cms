@@ -1,4 +1,6 @@
 import { apiUrl } from "../lib/api";
+import { fetchAllCatalog } from "../lib/catalogs";
+import { catalogDataConfig } from "@components/postType/catalogDataConfig";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { NextPage } from "next";
@@ -60,14 +62,8 @@ export default function Nutrientes() {
     },
   ];
 
-  const fetcherCultures = (url = "", token = "") =>
-    axios
-      .get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => res.data.cultures);
+  // v1 ou v2 conforme o módulo `culture` (specs/022).
+  const fetcherCultures = () => fetchAllCatalog("culture");
 
   const { data: cultures, error } = useSWR(
     [apiUrl(`/culture`), token],
@@ -109,6 +105,8 @@ export default function Nutrientes() {
           url,
           token,
           fetcherDataFn: (response: AxiosResponse) => response.data.nutrients,
+          // v1/v2 por lib/catalogs.ts (specs/022).
+          ...catalogDataConfig("nutrient"),
         }}
         formConfig={{
           insertTitle: "Adicionar Nutriente",

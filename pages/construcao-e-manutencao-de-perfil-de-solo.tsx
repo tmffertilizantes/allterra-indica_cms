@@ -1,4 +1,6 @@
 import { apiUrl } from "../lib/api";
+import { fetchAllProducers } from "../lib/producers";
+import { fetchAllAnalyses, getAnalysis, setAnalysisActive } from "../lib/analyses";
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -114,7 +116,8 @@ const Page: NextPage = () => {
                       setShowModalExibir(true);
 
                       try {
-                        let new_current_post = await getPost(value);
+                        // Na v2 o laudo não vem na lista: carregado só ao abrir (specs/022).
+                        let new_current_post = await getAnalysis(value, getPost(value));
 
                         // pega a cidade e o estado do consultor
                         // if (new_current_post.consultant.user.stateId) {
@@ -215,22 +218,34 @@ const Page: NextPage = () => {
         dataConfig={{
           url,
           token,
-          fetcherFn: (fetcherDataFn = () => {}, url = "", options = {}) =>
-            axios
-              .get(
-                apiUrl(`/analysis?includes=consultant,producer,culture,investment,product`),
-                options
-              )
-              .then(fetcherDataFn),
+          // v1 ou v2 conforme o módulo `analysis` (specs/022): na v2, sem o laudo na lista.
+          fetcherFn: (fetcherDataFn = (_: any) => {}) =>
+            fetchAllAnalyses().then((analysiss) =>
+              fetcherDataFn({ data: { analysiss } } as AxiosResponse)
+            ),
+          // Botão de status: na v2 só `{ active }` (specs/022 FR-011).
+          updateFn: async (
+            _updateUrl = "",
+            _url = "",
+            _options = {},
+            post: any = {},
+            fetcherDataFn = (_: any) => {}
+          ) => {
+            try {
+              await setAnalysisActive(post.id, post.active);
+            } catch {
+              AlertError();
+            }
+            const analysiss = await fetchAllAnalyses();
+            return fetcherDataFn({ data: { analysiss } } as AxiosResponse);
+          },
           fetcherDataFn: async (response: AxiosResponse) => {
             try {
               const analises_raw = response.data.analysiss;
 
-              const producers_raw = await axios.get(
-                apiUrl(`/producer?includes=culture`),
-                axios_options
-              );
-              const producers = producers_raw.data.producers;
+              // v1 ou v2 conforme o módulo `producer` (specs/020); na v2, CPF/telefone mascarados.
+
+              const producers = await fetchAllProducers();
 
               const analises = analises_raw
                 .map((analise: any) => {

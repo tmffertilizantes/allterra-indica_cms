@@ -1,4 +1,4 @@
-import { apiUrl } from "../../lib/api";
+import { deleteConsultant } from "../../lib/consultants";
 import {
   useMemo,
   useState,
@@ -21,6 +21,7 @@ import {
 import SelectLanguage from "@components/Utils/SelectLanguage";
 import StatusButton from "@components/Utils/Buttons/StatusButton";
 import { CSVLink } from "react-csv";
+import { sanitizeCsv } from "../../lib/csv";
 import Select from "react-select";
 
 interface DefaultColumnsFn {
@@ -364,22 +365,14 @@ const PostType = ({
   };
 
   const sendUserToTrash = async () => {
-    const options = {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-
-    const result = await axios.delete(
-      apiUrl(`/consultant/soft/${post.id}`),
-      options
-    );
-
-    if (result.status === 200) {
+    try {
+      // Exclusão lógica (v1: `DELETE consultant/soft/:id`; v2: `DELETE consultant/:id` — specs/020).
+      const result = await deleteConsultant(post.id);
+      if (result.status !== 200) throw new Error(String(result.status));
       AlertUserRemoved();
       reloadData();
       closeTrashModal();
-    } else {
+    } catch {
       AlertError();
     }
   };
@@ -480,7 +473,7 @@ const PostType = ({
                 {posts && exportButton && (
                   <CSVLink
                     className="btn btn-outline-primary"
-                    data={csvData ?? posts}
+                    data={sanitizeCsv(csvData ?? posts) ?? []}
                     headers={csvHeaders ?? false}
                     enclosingCharacter={""}
                   >
