@@ -1,4 +1,7 @@
 import { apiUrl } from "../lib/api";
+import { catalogDataConfig } from "@components/postType/catalogDataConfig";
+import { fetchAllCatalog } from "../lib/catalogs";
+import { UPLOAD_ACCEPT, UPLOAD_HINT, uploadErrorMessage, uploadFile } from "../lib/uploads";
 
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
@@ -19,23 +22,11 @@ interface CustomComponent {
   setPost: Function;
 }
 
-const fetcherCategories = (url = "", token = "") =>
-  axios
-    .get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    .then((res) => res.data.categories);
+// v1 ou v2 conforme o módulo `materialCategory` (specs/023).
+const fetcherCategories = () => fetchAllCatalog("materialCategory");
 
-const fetcherCultures = (url = "", token = "") =>
-  axios
-    .get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    .then((res) => res.data.cultures);
+// v1 ou v2 conforme o módulo `culture` (specs/022).
+const fetcherCultures = () => fetchAllCatalog("culture");
 
 const fetcherStates = (url = "", token = "") =>
   axios
@@ -49,7 +40,6 @@ const fetcherStates = (url = "", token = "") =>
 const Page: NextPage = () => {
   const { token = "" } = useGlobal();
   const url = apiUrl(`/material`);
-  const upload_url = apiUrl(`/upload`);
 
   const [language, setLanguage] = useState("pt-br");
   const [fileLabel, setFileLabel] = useState("");
@@ -123,41 +113,30 @@ const Page: NextPage = () => {
           <input
             className="d-none"
             type="file"
+            accept={UPLOAD_ACCEPT}
             ref={hiddenFileInput}
             onChange={(event) => {
               let files = event.target.files;
 
               if (files && files[0]) {
                 const file = files[0] ?? null;
-                const formData = new FormData();
-                formData.append("file", file);
 
                 setFileLabel("Enviando arquivo...");
 
-                axios
-                  .post(upload_url, formData, {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                      "Content-Type": "multipart/form-data",
-                    },
-                  })
-                  .then((response) => {
+                // v1 ou v2 conforme o módulo `upload` (specs/022): mesma resposta `{ file }`.
+                uploadFile(file)
+                  .then((fileUrl) => {
                     setFileLabel(file.name);
-                    setPost({ ...post, file: response.data.file });
+                    setPost({ ...post, file: fileUrl });
                   })
                   .catch((error) => {
-                    setFileLabel(
-                      "Ocorreu um erro ao enviar o arquivo, tente novamente."
-                    );
-
-                    if (error.response) {
-                      console.error(error.response.data); // => the response payload
-                    }
+                    setFileLabel(uploadErrorMessage(error));
                   });
               }
             }}
           />
 
+          <p className="text-muted small mb-1">{UPLOAD_HINT}</p>
           <p>{fileLabel}</p>
         </>
       ),
@@ -354,6 +333,8 @@ const Page: NextPage = () => {
         dataConfig={{
           url,
           token,
+          // v1/v2 por lib/catalogs.ts (specs/023): na v2 só os campos do DTO vão no corpo.
+          ...catalogDataConfig("material"),
           fetcherDataFn: (response: AxiosResponse) => response.data.materials,
         }}
         formConfig={{

@@ -1,4 +1,5 @@
 import { apiUrl } from "../lib/api";
+import { fetchTerms, saveTerms } from "../lib/content";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { useGlobal } from "@context/global";
@@ -15,18 +16,11 @@ import { AlertError, AlertItemEdited } from "@components/Alerts/Alerts";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
-const fetcherTerms = (url = "", token = "") =>
-  axios
-    .get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    .then((res) => res.data.terms);
+// v1 ou v2 conforme o módulo `terms` (specs/023): mesmo caminho e formato.
+const fetcherTerms = () => fetchTerms();
 
 export default function Termos() {
   const { token = "" } = useGlobal();
-  const url = apiUrl(`/terms`);
 
   const [descricao, setDescricao] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -35,15 +29,7 @@ export default function Termos() {
     setIsSaving(true);
 
     try {
-      const result = await axios.post(
-        url,
-        { description: descricao },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const result = await saveTerms(descricao);
 
       if (result.status === 200) {
         AlertItemEdited()
@@ -63,7 +49,7 @@ export default function Termos() {
 
   useEffect(() => {
     const term_description = terms?.map(
-      (termo: { description: "" }) => termo.description
+      (termo: { description: string }) => termo.description
     );
 
     if (term_description) {

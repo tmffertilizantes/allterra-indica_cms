@@ -1,4 +1,5 @@
 import { apiUrl } from "../lib/api";
+import { catalogDataConfig } from "@components/postType/catalogDataConfig";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { useGlobal } from "@context/global";
@@ -34,6 +35,8 @@ export default function Regioes() {
         dataConfig={{
           url,
           token,
+          // v1/v2 por lib/catalogs.ts (specs/023): na v2 só os campos do DTO vão no corpo.
+          ...catalogDataConfig("region"),
           fetcherDataFn: (response: AxiosResponse) => {
             return response.data.regions
           },

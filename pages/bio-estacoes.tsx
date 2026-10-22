@@ -1,4 +1,5 @@
 import { apiUrl } from "../lib/api";
+import { catalogDataConfig } from "@components/postType/catalogDataConfig";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { NoFilter, DateColumnFilter } from "@components/Table";
@@ -194,6 +195,8 @@ export default function BioEstacoes() {
           fetcherDataFn: (response: AxiosResponse) => {
             return response.data.bioStations;
           },
+          // v1/v2 por lib/catalogs.ts (specs/022).
+          ...catalogDataConfig("bioStation"),
         }}
         tableConfig={{
           columnsFn,

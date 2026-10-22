@@ -1,4 +1,6 @@
 import { apiUrl } from "../lib/api";
+import { createCatalogItem, fetchAllCatalog, saveCatalogItem } from "../lib/catalogs";
+import { catalogDataConfig } from "@components/postType/catalogDataConfig";
 import { PostType, NoFilter, DateColumnFilter } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -34,11 +36,7 @@ function NutrientRow({
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.patch(
-        apiUrl(`/nutrient/${nutrient.id}`),
-        { extract, export: exp },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await saveCatalogItem("nutrient", { id: nutrient.id, extract, export: exp });
       onSaved();
     } finally {
       setSaving(false);
@@ -97,11 +95,14 @@ function NewNutrientRow({
   const handleCreate = async () => {
     setSaving(true);
     try {
-      await axios.post(
-        apiUrl(`/nutrient`),
-        { name, extract, export: exp, cultureId, lang: "pt-BR", active: true },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await createCatalogItem("nutrient", {
+        name,
+        extract,
+        export: exp,
+        cultureId,
+        lang: "pt-BR",
+        active: true,
+      });
       onSaved();
     } finally {
       setSaving(false);
@@ -157,10 +158,7 @@ function ModalNutrientes({
 
   const { data: allNutrients, mutate: reloadNutrients } = useSWR(
     cultureId ? [nutrientsUrl, "modal", cultureId] : null,
-    () =>
-      axios
-        .get(nutrientsUrl, { headers: { Authorization: `Bearer ${token}` } })
-        .then((res) => res.data.nutrients)
+    () => fetchAllCatalog("nutrient", { cultureId })
   );
 
   const cultureNutrients: any[] = (allNutrients ?? []).filter(
@@ -332,6 +330,8 @@ const Page: NextPage = () => {
           url,
           token,
           fetcherDataFn: (response: AxiosResponse) => response.data.cultures,
+          // v1/v2 por lib/catalogs.ts (specs/022): na v2 só os campos do DTO vão no corpo.
+          ...catalogDataConfig("culture"),
         }}
         tableConfig={{
           columnsFn: customColumnsFn,

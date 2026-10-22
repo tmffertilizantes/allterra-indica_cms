@@ -76,9 +76,26 @@ test("invariante: tudo em v1 → apiUrl idêntica à URL de antes para todos os 
 });
 
 test("módulo em v2 desvia só aquele módulo", () => {
-  __setClientConfigForTests({ default: "v1", modules: { producer: "v2" }, minAppVersion: "0.0.0" });
+  __setClientConfigForTests({
+    default: "v1",
+    modules: { auth: "v2", producer: "v2" },
+    minAppVersion: "0.0.0",
+  });
   expect(apiUrl("/producer/search")).toBe(`${V2}/producer/search`);
   expect(apiUrl("/core")).toBe(`${V1}/core`);
+});
+
+test("módulos da Fase 2 em v2 sem auth em v2 ficam na v1 (specs/020 R2)", () => {
+  for (const name of ["core", "producer", "product", "consultant"]) {
+    __setClientConfigForTests({ default: "v1", modules: { [name]: "v2" }, minAppVersion: "0.0.0" });
+    expect(apiVersion(name)).toBe("v1");
+    __setClientConfigForTests({
+      default: "v1",
+      modules: { auth: "v2", [name]: "v2" },
+      minAppVersion: "0.0.0",
+    });
+    expect(apiVersion(name)).toBe("v2");
+  }
 });
 
 test("módulo ausente do mapa usa default", () => {
@@ -96,13 +113,13 @@ test("v2 sem API_URL_V2 → v1", () => {
 test("valor embutido (CLIENT_CONFIG_DEFAULT) vale sem configuração remota; inválido → padrão", () => {
   process.env.CLIENT_CONFIG_DEFAULT = JSON.stringify({
     default: "v1",
-    modules: { region: "v2" },
+    modules: { state: "v2" },
     minAppVersion: "0.0.0",
   });
-  expect(apiUrl("/region")).toBe(`${V2}/region`);
+  expect(apiUrl("/state")).toBe(`${V2}/state`);
 
   process.env.CLIENT_CONFIG_DEFAULT = '{"default":"v9"}';
-  expect(apiUrl("/region")).toBe(`${V1}/region`);
+  expect(apiUrl("/state")).toBe(`${V1}/state`);
   expect(parseClientConfig({ ...DEFAULT_CLIENT_CONFIG })).toEqual(DEFAULT_CLIENT_CONFIG);
 });
 
@@ -134,4 +151,25 @@ test.describe("módulo nativo da v2: Posição Microgeo (specs/017)", () => {
     expect(isFeatureEnabled("microgeoPosition")).toBe(true);
     expect(apiUrl("/microgeo-position?take=100&skip=0")).toBe(`${V2}/microgeo-position?take=100&skip=0`);
   });
+});
+
+test("Fase 5 (specs/023): região, revenda, categorias, materiais, termos e contato exigem auth em v2; state não", () => {
+  const phase5 = ["category", "region", "resale", "material", "materialCategory", "contact", "terms"];
+  const modules = Object.fromEntries(phase5.map((m) => [m, "v2"]));
+  __setClientConfigForTests({ default: "v1", modules: { ...modules, state: "v2" }, minAppVersion: "0.0.0" });
+  for (const m of phase5) expect(apiUrl(`/${m}`)).toBe(`${V1}/${m}`);
+  expect(apiUrl("/state")).toBe(`${V2}/state`);
+  __setClientConfigForTests({ default: "v1", modules: { auth: "v2", ...modules }, minAppVersion: "0.0.0" });
+  for (const m of phase5) expect(apiUrl(`/${m}`)).toBe(`${V2}/${m}`);
+});
+
+test("virada (specs/023 R12): base em v2 → toda rota na v2", () => {
+  __setClientConfigForTests({
+    default: "v2",
+    modules: { microgeoPosition: "v2", webchat: "v2", aiAnalysis: "v2" },
+    minAppVersion: "2.2.0",
+  });
+  for (const path of ["/auth/login", "/admin/users/1", "/core", "/analysis", "/region/all", "/terms", "/state"]) {
+    expect(apiUrl(path)).toBe(`${V2}${path}`);
+  }
 });

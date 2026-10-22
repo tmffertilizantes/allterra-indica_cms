@@ -1,4 +1,9 @@
 import { apiUrl } from "../lib/api";
+import { fetchAllConsultants } from "../lib/consultants";
+import { fetchAllProducers, getProducer, isProducerV2, saveProducer } from "../lib/producers";
+import { serverMessage } from "../lib/users";
+import { AlertItemEdited } from "@components/Alerts/Alerts";
+import Swal from "sweetalert2";
 import { AlertError } from "@components/Alerts/Alerts";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
@@ -35,6 +40,13 @@ export default function Produtores() {
   const [currentPost, setCurrentPost] = useState<any>({});
 
   const [estado, setEstado] = useState<string | null>(null);
+
+  const { data: consultants } = useSWR(isProducerV2() ? ["consultants-all", token] : null, () =>
+    fetchAllConsultants()
+  );
+  const consultantOptions: { value: number; label: string }[] = (consultants ?? []).map(
+    (consultant: any) => ({ value: consultant.userId, label: consultant.user?.name ?? "" })
+  );
   const [technology, setTechnology] = useState<string | null>(null);
 
   const fields = [
@@ -80,6 +92,25 @@ export default function Produtores() {
       field: "area",
       label: "Área",
     },
+    // v2 (specs/020): o administrador pode definir o consultor responsável (dono do produtor).
+    ...(isProducerV2()
+      ? [
+          {
+            Component: ({ post, setPost }: CustomComponent) => (
+              <div className="mb-3">
+                <label className="form-label">Consultor responsável</label>
+                <Select
+                  options={consultantOptions}
+                  value={consultantOptions.find((option) => option.value === post.userId) ?? null}
+                  onChange={(option: any) => setPost({ ...post, userId: option?.value ?? null })}
+                  isClearable
+                  placeholder="Selecione"
+                />
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       Component: ({ post, setPost }: CustomComponent) => (
         <SelectTechnology
@@ -136,7 +167,8 @@ export default function Produtores() {
                     setLoadingModalExibir(true);
 
                     try {
-                      let new_current_post = await getPost(value);
+                      // v2: a listagem vem mascarada; o detalhe traz CPF e telefone completos.
+                      let new_current_post = await getProducer(Number(value), await getPost(value));
 
                       // pega a cidade e o estado do consultor
                       if (new_current_post.stateId) {
@@ -205,14 +237,32 @@ export default function Produtores() {
         dataConfig={{
           url,
           token,
-          fetcherFn: (fetcherDataFn = () => {}, url = "", options = {}) =>
-            axios
-              .get(
-                apiUrl(`/producer?includes=analysis,user`),
-                options
-              )
-              .then(fetcherDataFn),
+          fetcherFn: (fetcherDataFn = (_: any) => {}) =>
+            fetchAllProducers().then((producers) =>
+              fetcherDataFn({ data: { producers } } as AxiosResponse)
+            ),
           fetcherDataFn: (response: AxiosResponse) => response.data.producers,
+          // Edição e botão de status. Na v2, CPF/telefone mascarados não editados não são enviados.
+          updateFn: async (
+            _updateUrl = "",
+            _url = "",
+            _options = {},
+            post: any = {},
+            fetcherDataFn = (_: any) => {}
+          ) => {
+            try {
+              await saveProducer(post);
+              AlertItemEdited();
+            } catch (error) {
+              Swal.fire({
+                icon: "error",
+                title: "Erro",
+                text: serverMessage(error, "Não foi possível salvar o produtor"),
+              });
+            }
+            const producers = await fetchAllProducers();
+            return fetcherDataFn({ data: { producers } } as AxiosResponse);
+          },
         }}
         formConfig={{
           insertTitle: "Adicionar Produtor",

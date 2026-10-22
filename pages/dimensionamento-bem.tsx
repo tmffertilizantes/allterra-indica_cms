@@ -1,4 +1,7 @@
 import { apiUrl } from "../lib/api";
+import { fetchAllBemSizings } from "../lib/catalogs";
+import { fetchAllConsultants } from "../lib/consultants";
+import { fetchAllProducers } from "../lib/producers";
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -138,17 +141,19 @@ const Page: NextPage = () => {
         dataConfig={{
           url,
           token,
-          fetcherFn: (fetcherDataFn = () => {}, url = "", options = {}) =>
-            axios.get(url, options).then(fetcherDataFn),
+          // v1 ou v2 conforme o módulo `bemSizing` (specs/022).
+          fetcherFn: (fetcherDataFn = (_: any) => {}) =>
+            fetchAllBemSizings().then((bemSizings) =>
+              fetcherDataFn({ data: { bemSizings } } as AxiosResponse)
+            ),
           fetcherDataFn: async (response: AxiosResponse) => {
             const bemSizings = response.data.bemSizings || [];
 
-            const [producersRes, consultantsRes] = await Promise.all([
-              axios.get(apiUrl(`/producer`), axiosOptions),
-              axios.get(apiUrl(`/consultant`), axiosOptions),
+            // v1 ou v2 conforme os módulos `producer`/`consultant` (specs/020).
+            const [producers, consultants] = await Promise.all([
+              fetchAllProducers(),
+              fetchAllConsultants(),
             ]);
-            const producers = producersRes.data.producers || [];
-            const consultants = consultantsRes.data.consultants || [];
 
             const enriched = bemSizings.map((item: any) => ({
               ...item,
