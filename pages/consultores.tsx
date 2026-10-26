@@ -1,4 +1,6 @@
 import { apiUrl } from "../lib/api";
+import { fetchAllCatalog } from "../lib/catalogs";
+import { fetchAllConsultants, updateConsultant } from "../lib/consultants";
 import {
   AlertError,
   AlertItemEdited,
@@ -52,23 +54,9 @@ const fetcherUsers = (url = "", token = "") =>
     })
     .then((res) => res.data.users);
 
-const fetcherRegions = (url = "", token = "") =>
-  axios
-    .get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    .then((res) => res.data.regions);
-
-const fetcherResales = (url = "", token = "") =>
-  axios
-    .get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    .then((res) => res.data.resales);
+// v1 ou v2 conforme o módulo (specs/023): na v2, a lista administrativa (todas, inclusive inativas).
+const fetcherRegions = () => fetchAllCatalog("region");
+const fetcherResales = () => fetchAllCatalog("resale");
 
 interface User {
   activatedAt?: string;
@@ -461,18 +449,20 @@ export default function Consultores() {
       const approved = post.user.status === "approved";
       await Promise.all([
         updateUser(userId, post.user as any),
-        axios.patch(
-          apiUrl(`/consultant/${post.id}`),
-          { resaleId: post.resaleId, regionId: post.regionId, betaTester: post.betaTester },
-          options
-        ),
+        // v1 ou v2 conforme o módulo `consultant` (specs/020): região, revenda e acesso beta.
+        updateConsultant(post.id as number, {
+          resaleId: post.resaleId,
+          regionId: post.regionId,
+          betaTester: post.betaTester,
+        }),
       ]);
       if (approved !== (loadedStatus[userId] === "approved")) await setApproval(userId, approved);
       AlertItemEdited();
     } catch (error) {
       Swal.fire({ icon: "error", title: "Erro", text: serverMessage(error, "Não foi possível salvar") });
     }
-    return fetcherDataFn(await axios.get(url, options));
+    const consultants = await fetchAllConsultants();
+    return fetcherDataFn({ data: { consultants } } as AxiosResponse);
   };
 
   const { data: users, error } = useSWR(
@@ -495,7 +485,7 @@ export default function Consultores() {
       value: user.id,
       label: user.name,
     })
-  );
+  ) ?? [];
 
   const { data: resale } = useSWR(
     [apiUrl(`/resale`), token],
@@ -505,7 +495,7 @@ export default function Consultores() {
   const resales_as_options = resale?.map((user: { id: any; name: string }) => ({
     value: user.id,
     label: user.name,
-  }));
+  })) ?? [];
 
   const colunas =
     ({
@@ -615,11 +605,11 @@ export default function Consultores() {
         dataConfig={{
           url,
           token,
-          fetcherFn: (
-            fetcherDataFn = () => {},
-            url = "/consultant?includes=region,resale",
-            options = {}
-          ) => axios.get(url, options).then(fetcherDataFn),
+          // v1: `GET consultant?includes=region,resale`; v2: listagem paginada só do CMS (specs/020).
+          fetcherFn: (fetcherDataFn = (_: any) => {}) =>
+            fetchAllConsultants().then((consultants) =>
+              fetcherDataFn({ data: { consultants } } as AxiosResponse)
+            ),
           fetcherDataFn: (response: AxiosResponse) => {
             const consultant = response.data.consultants;
 

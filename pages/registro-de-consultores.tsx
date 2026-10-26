@@ -1,4 +1,5 @@
 import { apiUrl } from "../lib/api";
+import { fetchConsultantReport } from "../lib/consultants";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { NoFilter } from "@components";
@@ -141,19 +142,11 @@ export default function RegistroDeConsultores() {
         dataConfig={{
           url,
           token,
-          fetcherFn: (
-            fetcherDataFn = () => {},
-            url = apiUrl(`/consultant/report?start_date=${startDate ?? "2000-01-01"
-              }&end_date=${endDate ?? getTodayDate()}`),
-            options = {}
-          ) =>
-            axios
-              .get(
-                apiUrl(`/consultant/report?start_date=${startDate ?? "2000-01-01"
-                }&end_date=${endDate ?? getTodayDate()}`),
-                options
-              )
-              .then(fetcherDataFn),
+          // Mesmo contrato nas duas versões; na v2 só sessão do CMS + permissão (specs/020).
+          fetcherFn: (fetcherDataFn = (_: any) => {}) =>
+            fetchConsultantReport(String(startDate ?? "2000-01-01"), String(endDate ?? getTodayDate())).then(
+              (consultants) => fetcherDataFn({ data: { consultants } } as AxiosResponse)
+            ),
           fetcherDataFn: (response: AxiosResponse) => {
             const consultant = response.data.consultants;
 

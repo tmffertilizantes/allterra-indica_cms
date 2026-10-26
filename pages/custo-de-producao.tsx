@@ -1,5 +1,6 @@
 import { apiUrl } from "../lib/api";
 import { fetchAllUsers } from "../lib/users";
+import { fetchCostRecords, setCostRecordActive } from "../lib/costs";
 import { DateColumnFilter, NoFilter, PostType } from "@components";
 import { NextPage } from "next";
 import { useGlobal } from "@context/global";
@@ -10,7 +11,7 @@ import ModalExibirPost from "@components/postType/ModalExibirPost";
 import { Spinner } from "react-bootstrap";
 import { ColumnFn } from "models/ColumnFn";
 import ShowButton from "@components/Utils/Buttons/ShowButton";
-import { AlertError } from "@components/Alerts/Alerts";
+import { AlertError, AlertItemEdited } from "@components/Alerts/Alerts";
 import { getUserLocation } from "@context/user";
 import StatusButton from "@components/Utils/Buttons/StatusButton";
 
@@ -117,10 +118,27 @@ const Page: NextPage = () => {
         dataConfig={{
           url,
           token,
-          fetcherFn: (fetcherDataFn = () => {}, url = "", options = {}) =>
-            axios
-              .get(apiUrl(`/core`), options)
-              .then(fetcherDataFn),
+          fetcherFn: (fetcherDataFn = (_: any) => {}) =>
+            fetchCostRecords("production").then((records) =>
+              fetcherDataFn({ data: { cores: { data: records } } } as AxiosResponse)
+            ),
+          // Botão de status: v2 aceita só { active } (contracts/core-api.md §2.4).
+          updateFn: async (
+            _updateUrl = "",
+            _url = "",
+            _options = {},
+            post: { id: number; active: boolean },
+            fetcherDataFn = (_: any) => {}
+          ) => {
+            try {
+              await setCostRecordActive(post.id, post.active);
+              AlertItemEdited();
+            } catch {
+              AlertError();
+            }
+            const records = await fetchCostRecords("production");
+            return fetcherDataFn({ data: { cores: { data: records } } } as AxiosResponse);
+          },
           fetcherDataFn: async (response: AxiosResponse) => {
             const cores_raw = response.data.cores.data;
 
@@ -129,18 +147,6 @@ const Page: NextPage = () => {
 
             const cores = cores_raw
               .map((core: any) => {
-                if (core.pdfLink[0]) {
-                  core = {
-                    ...core,
-                    pdf_url: core.pdfLink[0].pdfPathName,
-                  };
-                } else {
-                  core = {
-                    ...core,
-                    pdf_url: false,
-                  };
-                }
-
                 return {
                   ...core,
                   costProductionRequest: JSON.parse(core.costProductionRequest),

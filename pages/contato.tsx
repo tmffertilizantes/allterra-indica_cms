@@ -1,4 +1,5 @@
 import { apiUrl } from "../lib/api";
+import { fetchContacts, saveContact } from "../lib/content";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { useGlobal } from "@context/global";
@@ -13,18 +14,11 @@ import { Spinner } from "react-bootstrap";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
-const fetcherTerms = (url = "", token = "") =>
-  axios
-    .get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    .then((res) => res.data.contacts);
+// v1 ou v2 conforme o módulo `contact` (specs/023): mesmo caminho e formato.
+const fetcherTerms = () => fetchContacts();
 
 export default function Termos() {
   const { token = "" } = useGlobal();
-  const url = apiUrl(`/contact`);
 
   const [descricao, setDescricao] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -33,15 +27,7 @@ export default function Termos() {
     setIsSaving(true);
 
     try {
-      const result = await axios.post(
-        url,
-        { section: descricao },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const result = await saveContact(descricao);
 
       if (result.status === 200) {
         AlertItemCreated()
@@ -62,7 +48,7 @@ export default function Termos() {
 
   useEffect(() => {
     const term_description = terms?.map(
-      (termo: { section: "" }) => termo.section
+      (termo: { section: string }) => termo.section
     );
 
     if (term_description) {
