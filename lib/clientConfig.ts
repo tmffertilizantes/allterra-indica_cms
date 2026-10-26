@@ -107,17 +107,59 @@ export function apiBases(): Record<ApiVersion, string | undefined> {
   };
 }
 
-/** Primeiro segmento do caminho = nome do módulo legado. URL absoluta → `null`. */
+/**
+ * Rotas da v2 cujo 1º segmento não é módulo do legado (specs/016, research R3): `users/me` e
+ * `admin/*` pertencem ao módulo `user` e ligam junto com ele. `microgeo-position/*` é o módulo
+ * nativo da v2 `microgeoPosition` (specs/017); `ai-analysis/*`, o módulo `aiAnalysis` (specs/019).
+ */
+const MODULE_ALIASES: Record<string, string> = {
+  users: "user",
+  admin: "user",
+  "microgeo-position": "microgeoPosition",
+  "ai-analysis": "aiAnalysis",
+};
+
+/** Módulos que dependem da sessão v2: sem `auth` em v2, são tratados como v1 (desligados). */
+const REQUIRES_V2_AUTH = new Set([
+  "user",
+  "preferences",
+  "microgeoPosition",
+  "webchat",
+  "aiAnalysis",
+  "resultSectionOrder",
+]);
+
+/** Funcionalidades que só existem na v2 (specs/017, specs/018, specs/019). */
+export type V2Feature = "microgeoPosition" | "webchat" | "aiAnalysis";
+
+/** Primeiro segmento do caminho = nome do módulo legado (com aliases). URL absoluta → `null`. */
 export function resolveModule(path: string): string | null {
   if (!path || /^https?:\/\//i.test(path)) return null;
   const segment = path.replace(/^\/+/, "").split(/[/?#]/)[0];
-  return segment || null;
+  if (!segment) return null;
+  return MODULE_ALIASES[segment] ?? segment;
 }
 
 /** Versão que atende o módulo; usar quando o contrato da v2 diferir do legado (Fase 1+). */
 export function apiVersion(moduleName: string): ApiVersion {
   const config = getActiveClientConfig();
-  return config.modules[moduleName] ?? config.default;
+  const version = config.modules[moduleName] ?? config.default;
+  // A v2 nunca aceita token legado: sem `auth` em v2, user/preferences (e os módulos nativos da
+  // v2) ficam na v1 (R2).
+  if (REQUIRES_V2_AUTH.has(moduleName) && version === "v2") {
+    return (config.modules.auth ?? config.default) === "v2" ? "v2" : "v1";
+  }
+  return version;
+}
+
+/** Funcionalidade nativa da v2 ligada pela configuração (contracts/client-config-v2-modules.md da 017). */
+export function isFeatureEnabled(feature: V2Feature): boolean {
+  return apiVersion(feature) === "v2";
+}
+
+/** Versão do CMS enviada ao /client-config (`targets.cms.minVersion` — research R1 da 016). */
+export function cmsVersion(): string {
+  return (process.env.NEXT_PUBLIC_CMS_VERSION || "").replace(/^v/, "");
 }
 
 let warnedMissingV2 = false;
@@ -150,6 +192,7 @@ export async function loadClientConfig(): Promise<void> {
   try {
     const response = await clientConfigHttp.get("/client-config", {
       baseURL,
+      params: { client: "cms", version: cmsVersion() },
       headers: current?.etag ? { "If-None-Match": current.etag } : undefined,
     });
 

@@ -1,4 +1,5 @@
 import { apiUrl } from "../lib/api";
+import { AnalysisType, ANALYSIS_TYPE_LABELS } from "../lib/aiAnalysis";
 import LayoutDefault from "@components/Layouts/default";
 import { useGlobal } from "@context/global";
 import { useEffect, useState } from "react";
@@ -24,25 +25,12 @@ import { CSS } from "@dnd-kit/utilities";
 
 interface ResultSectionOrder {
   id: number;
-  analysisType:
-    | "nutrition"
-    | "fertility"
-    | "tmfVsCompetitor"
-    | "productionCost"
-    | "bemSizing";
+  analysisType: AnalysisType;
   sectionOrder: string[];
   hiddenSections: string[];
   createdAt: string;
   updatedAt: string;
 }
-
-const ANALYSIS_TYPE_LABELS: Record<ResultSectionOrder["analysisType"], string> = {
-  nutrition: "Manutenção e Nutrição de Plantas",
-  fertility: "Fertilidade e Construção de Perfil de Solo",
-  tmfVsCompetitor: "Investimento TMF x Concorrente",
-  productionCost: "Custo de Produção",
-  bemSizing: "Dimensionamento de Bio Estação (BEM)",
-};
 
 const SECTION_LABELS: Record<string, string> = {
   guarantees: "Garantias do produto",
@@ -59,15 +47,28 @@ const SECTION_LABELS: Record<string, string> = {
   recommendedInputs: "Insumos recomendados",
   indicators: "Indicadores",
   budget: "Orçamento Final",
+  // Posição Microgeo (spec 017; Personalização desde a spec 019)
+  recommendedDose: "Dose recomendada",
+  splitOptions: "Opções de parcelamento",
+  applicationMode: "Modo de aplicação",
+  compatibility: "Compatibilidade / Observações",
+  warnings: "Avisos de aplicação",
+  // Análise IA (spec 019)
+  aiAnalysis: "Análise IA",
 };
 
-const DEFAULT_ORDER_BY_TYPE: Record<ResultSectionOrder["analysisType"], string[]> = {
+/** Igual ao catálogo da v2 (src/result-section-order/result-sections.catalog.ts). */
+const DEFAULT_ORDER_BY_TYPE: Record<
+  ResultSectionOrder["analysisType"],
+  string[]
+> = {
   nutrition: [
     "guarantees",
     "summary",
     "nutrientsDelivered",
     "nutritionalRequirement",
     "productDescription",
+    "aiAnalysis",
   ],
   fertility: [
     "guarantees",
@@ -76,10 +77,32 @@ const DEFAULT_ORDER_BY_TYPE: Record<ResultSectionOrder["analysisType"], string[]
     "nutrientsDelivered",
     "nutritionalRequirement",
     "productDescription",
+    "aiAnalysis",
   ],
-  tmfVsCompetitor: ["comparisonHighlight", "competitorCostDetail", "tmfInvestmentDetail"],
-  productionCost: ["comparisonHighlight", "comparisonDetail"],
-  bemSizing: ["recommendedModel", "recommendedInputs", "indicators", "summary", "budget"],
+  tmfVsCompetitor: [
+    "comparisonHighlight",
+    "competitorCostDetail",
+    "tmfInvestmentDetail",
+    "aiAnalysis",
+  ],
+  productionCost: ["comparisonHighlight", "comparisonDetail", "aiAnalysis"],
+  bemSizing: [
+    "recommendedModel",
+    "recommendedInputs",
+    "indicators",
+    "summary",
+    "budget",
+    "aiAnalysis",
+  ],
+  microgeoPosition: [
+    "summary",
+    "recommendedDose",
+    "splitOptions",
+    "applicationMode",
+    "compatibility",
+    "warnings",
+    "aiAnalysis",
+  ],
 };
 
 function SortableSectionItem({
@@ -91,7 +114,14 @@ function SortableSectionItem({
   isHidden: boolean;
   onToggleHidden: (key: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: sectionKey,
   });
 
@@ -136,13 +166,16 @@ export default function PersonalizacaoResultados() {
   const url = apiUrl(`/resultSectionOrder`);
 
   const [rows, setRows] = useState<ResultSectionOrder[]>([]);
-  const [activeType, setActiveType] = useState<ResultSectionOrder["analysisType"]>("nutrition");
+  const [activeType, setActiveType] =
+    useState<ResultSectionOrder["analysisType"]>("nutrition");
   const [isLoading, setLoading] = useState(true);
   const [isSaving, setSaving] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const axiosOptions = { headers: { Authorization: `Bearer ${token}` } };
@@ -164,7 +197,7 @@ export default function PersonalizacaoResultados() {
   function updateActiveRow(patch: Partial<ResultSectionOrder>) {
     if (!activeRow) return;
     setRows((prev) =>
-      prev.map((row) => (row.id === activeRow.id ? { ...row, ...patch } : row))
+      prev.map((row) => (row.id === activeRow.id ? { ...row, ...patch } : row)),
     );
   }
 
@@ -174,7 +207,9 @@ export default function PersonalizacaoResultados() {
 
     const oldIndex = activeRow.sectionOrder.indexOf(String(active.id));
     const newIndex = activeRow.sectionOrder.indexOf(String(over.id));
-    updateActiveRow({ sectionOrder: arrayMove(activeRow.sectionOrder, oldIndex, newIndex) });
+    updateActiveRow({
+      sectionOrder: arrayMove(activeRow.sectionOrder, oldIndex, newIndex),
+    });
   }
 
   function toggleHidden(sectionKey: string) {
@@ -191,16 +226,25 @@ export default function PersonalizacaoResultados() {
     const response = await axios.patch(
       `${url}/${activeRow.id}`,
       { sectionOrder, hiddenSections },
-      axiosOptions
+      axiosOptions,
     );
     const updated = response.data.resultSectionOrder;
-    setRows((prev) => prev.map((row) => (row.id === updated.id ? updated : row)));
+    setRows((prev) =>
+      prev.map((row) => (row.id === updated.id ? updated : row)),
+    );
     setSaving(false);
   }
 
   function restoreDefault() {
     if (!activeRow) return;
-    saveOrder(DEFAULT_ORDER_BY_TYPE[activeRow.analysisType], []);
+    // Só as chaves que a linha tem: o legado (antes da troca para a v2) não conhece "aiAnalysis".
+    const current = activeRow.sectionOrder;
+    saveOrder(
+      DEFAULT_ORDER_BY_TYPE[activeRow.analysisType].filter((key) =>
+        current.includes(key),
+      ),
+      [],
+    );
   }
 
   return (
@@ -223,15 +267,28 @@ export default function PersonalizacaoResultados() {
             ) : (
               <Tabs
                 activeKey={activeType}
-                onSelect={(key) => key && setActiveType(key as ResultSectionOrder["analysisType"])}
+                onSelect={(key) =>
+                  key &&
+                  setActiveType(key as ResultSectionOrder["analysisType"])
+                }
                 className="mb-3"
               >
-                {(Object.keys(ANALYSIS_TYPE_LABELS) as ResultSectionOrder["analysisType"][]).map(
-                  (type) => {
+                {(
+                  Object.keys(
+                    ANALYSIS_TYPE_LABELS,
+                  ) as ResultSectionOrder["analysisType"][]
+                )
+                  // Só os tipos que a API devolve (o legado não tem a Posição Microgeo).
+                  .filter((type) => rows.some((r) => r.analysisType === type))
+                  .map((type) => {
                     const row = rows.find((r) => r.analysisType === type);
 
                     return (
-                      <Tab eventKey={type} title={ANALYSIS_TYPE_LABELS[type]} key={type}>
+                      <Tab
+                        eventKey={type}
+                        title={ANALYSIS_TYPE_LABELS[type]}
+                        key={type}
+                      >
                         {row && (
                           <DndContext
                             sensors={sensors}
@@ -247,7 +304,9 @@ export default function PersonalizacaoResultados() {
                                   <SortableSectionItem
                                     key={sectionKey}
                                     sectionKey={sectionKey}
-                                    isHidden={row.hiddenSections.includes(sectionKey)}
+                                    isHidden={row.hiddenSections.includes(
+                                      sectionKey,
+                                    )}
                                     onToggleHidden={toggleHidden}
                                   />
                                 ))}
@@ -260,7 +319,10 @@ export default function PersonalizacaoResultados() {
                           <button
                             className="btn btn-primary"
                             disabled={isSaving || !row}
-                            onClick={() => row && saveOrder(row.sectionOrder, row.hiddenSections)}
+                            onClick={() =>
+                              row &&
+                              saveOrder(row.sectionOrder, row.hiddenSections)
+                            }
                           >
                             {isSaving ? "Salvando..." : "Salvar"}
                           </button>
@@ -274,8 +336,7 @@ export default function PersonalizacaoResultados() {
                         </div>
                       </Tab>
                     );
-                  }
-                )}
+                  })}
               </Tabs>
             )}
           </div>
