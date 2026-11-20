@@ -8,6 +8,7 @@ import {
 } from "../lib/products";
 import { AlertItemCreated, AlertItemEdited } from "@components/Alerts/Alerts";
 import Swal from "sweetalert2";
+import { fileToResizedDataUri } from "../lib/imageResize";
 import LayoutDefault from "@components/Layouts/default";
 import { PostType } from "@components/postType";
 import { DateColumnFilter, NoFilter } from "@components/Table";
@@ -462,17 +463,19 @@ export default function Produtos() {
     },
   ];
 
-const handleFileB64 = (event: React.ChangeEvent<HTMLInputElement>, setPost: any) => {
-  const file = event.target.files?.[0];
+const handleFileB64 = async (event: React.ChangeEvent<HTMLInputElement>, setPost: any) => {
+  const input = event.target;
+  const file = input.files?.[0];
   if (!file) return;
-  setProductImage(p => ({...p, name: file.name }));
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const b64 = reader.result as string;
-    setProductImage(p => ({...p, b64 }));
+  try {
+    // Reduzida antes de gravar: imagem de vários MB trava o app (lib/imageResize.ts).
+    const b64 = await fileToResizedDataUri(file);
+    setProductImage(p => ({...p, name: file.name, b64 }));
     setPost((p: any) => ({...p, image: b64 }))
-  };
-  reader.readAsDataURL(file);
+  } catch (error) {
+    input.value = "";
+    Swal.fire({ icon: "error", title: "Imagem", text: (error as Error).message });
+  }
 };
 
   const { data: categories, error } = useSWR(

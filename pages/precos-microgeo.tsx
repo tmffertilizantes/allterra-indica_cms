@@ -9,6 +9,8 @@ import { useGlobal } from "@context/global";
 import { AxiosResponse } from "axios";
 import { ColumnFn } from "models/ColumnFn";
 import React from "react";
+import Swal from "sweetalert2";
+import { fileToResizedDataUri } from "../lib/imageResize";
 
 interface CustomComponent {
   post: any;
@@ -20,19 +22,22 @@ const ROLE_LABELS: Record<string, string> = {
   reposicao: "Microgeo Reposição",
 };
 
-const handleFileB64 = (
+const handleFileB64 = async (
   event: React.ChangeEvent<HTMLInputElement>,
   setPost: any
 ) => {
-  const file = event.target.files?.[0];
+  const input = event.target;
+  const file = input.files?.[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const b64 = reader.result as string;
+  try {
+    // Reduzida antes de gravar: imagem de vários MB trava o app (lib/imageResize.ts).
+    const b64 = await fileToResizedDataUri(file);
     setPost((post: any) => ({ ...post, image: b64 }));
-  };
-  reader.readAsDataURL(file);
+  } catch (error) {
+    input.value = "";
+    Swal.fire({ icon: "error", title: "Imagem", text: (error as Error).message });
+  }
 };
 
 export default function ProdutosMicrogeo() {
